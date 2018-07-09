@@ -26,7 +26,7 @@ public class SimpleEchoClient {
       }
    }
 
-   public void sendAndReceive()
+   public void sendAndReceive(int readOrWrite)
    {
       // Prepare a DatagramPacket and send it via sendReceiveSocket
       // to port 5000 on the destination host.
@@ -41,7 +41,15 @@ public class SimpleEchoClient {
       // byte array.
 
       //byte msg[] = s.getBytes();
-      constructArray(1,"Test.txt","netascii");
+      
+      if(readOrWrite!=10) {
+      constructArray(readOrWrite%2+1,"Test.txt","netascii");
+      }
+      else {
+    	  constructArray(9,"Test.txt","netascii");
+      }
+      
+     
       // Construct a datagram packet that is to be sent to a specified port 
       // on a specified host.
       // The arguments are:
@@ -92,30 +100,41 @@ public class SimpleEchoClient {
       printInfoReceived(receivePacket,data);
       
       // We're finished, so close the socket.
-      sendReceiveSocket.close();
-   }
+      //sendReceiveSocket.close();
+   } 
 
    public static void main(String args[])
    {
       SimpleEchoClient c = new SimpleEchoClient();
-      c.sendAndReceive();
+      for(int i=0;i<11;i++) {      
+    	  System.out.println("Rotation : " + i);
+    	  c.sendAndReceive(i);
+      
+      }
+      c.sendReceiveSocket.close();
    }
    
+
    public void printInfoToSend(DatagramPacket pack) {
-	      System.out.println("Client: Sending packet:");
+	   /*
+	      
 	      System.out.println("To host: " + pack.getAddress());
 	      System.out.println("Destination host port: " + pack.getPort());
-	      int len = getLen(pack);
+	      
 	      System.out.println("Length: " + len);
-	      System.out.print("Containing: ");
+	      
+	      */
+	   	  int len = getLen(pack);
+	      System.out.println("Client: Sending packet:");
+	   	  System.out.print("Containing: ");
 	      System.out.println(new String(pack.getData(),0,len)); // or could print "s"
    }
    public void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
 	   	  System.out.println("Client: Packet received:");
-	      System.out.println("From host: " + pack.getAddress());
-	      System.out.println("Host port: " + pack.getPort());
+	      //System.out.println("From host: " + pack.getAddress());
+	      //System.out.println("Host port: " + pack.getPort());
 	      int len = getLen(pack);
-	      System.out.println("Length: " + len);
+	      //System.out.println("Length: " + len);
 	      System.out.print("Containing: ");
 	      // Form a String from the byte array.
 	      String received = new String(dataByte,0,len);   
@@ -130,10 +149,38 @@ public class SimpleEchoClient {
    public void constructArray(int request,String file,String mode) {
        byte zero[] = new byte[1];
        byte fileByte [] = file.getBytes();
+       
        byte modeByte[] = mode.getBytes();
        msg = new byte[zero.length + zero.length + 2 + modeByte.length + fileByte.length];
        msg[0] = (byte)0;
        msg[1] = (byte)request;
+       /*
+       System.out.println("First byte" + msg[0]);
+       System.out.println("Second byte" + msg[1]);
+       System.out.println("Filename" + fileByte);
+       System.out.println("Zero Byte" + msg[0]);
+       System.out.println("NetAscii " + modeByte);
+       System.out.println("Zero byte" + msg[0]);
+       */
+       byte[] dataGramPackage = new byte[2 + fileByte.length + 1 + modeByte.length + 1];
+       dataGramPackage[0] = msg[0];
+       dataGramPackage[1] = msg[1];
+       for(int i = 0 ;i < fileByte.length;i++) {
+    	   dataGramPackage[2+i] = fileByte[i];
+       }
+       dataGramPackage[fileByte.length+2] = msg[0];
+       for(int i = 0 ;i < modeByte.length;i++) {
+    	   dataGramPackage[3+fileByte.length+i] = modeByte[i];
+       }
+       dataGramPackage[fileByte.length+2] = msg[0];
+       System.out.print("Package in bytes: ");
+       for(int x = 0;x<dataGramPackage.length;x++) {
+    	   System.out.print(dataGramPackage[x]);
+       }
+       System.out.println("");
+       String outgoing = new String(msg,0,msg.length);  
+       System.out.print("Package in string: "+ outgoing);
+       /*
       // System.arraycopy(fileByte, 0, data, fileByte.length);
        System.arraycopy(fileByte,0,msg,2+fileByte.length,fileByte.length);
        System.arraycopy(zero, 0, msg, 2 + fileByte.length, zero.length);
@@ -141,8 +188,8 @@ public class SimpleEchoClient {
        System.arraycopy(zero, 0, msg,2 + fileByte.length+ zero.length + modeByte.length, zero.length); 
        for(int x = 0;x<msg.length;x++) {
     	   System.out.print(msg[x]);
-       }
-        
+       }*/
+       msg = dataGramPackage;
 
    }
 }
