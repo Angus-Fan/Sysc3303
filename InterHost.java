@@ -22,7 +22,7 @@ public class InterHost {
 	} 
 	
 	public void receiveAndSend() {
-		byte data[] = new byte[100];
+		byte data[] = new byte[512];
 		receivePacket = new DatagramPacket(data,data.length);
 		trimmedReceivePacket = new DatagramPacket(data,data.length);
 		

@@ -8,9 +8,12 @@ import java.io.*;
 import java.net.*;
 
 public class SimpleEchoClient {
-
+   final String path="C:\\Users\\michaelwang3\\Desktop\\";
+   final String fileName="Test.txt";
    DatagramPacket sendPacket, receivePacket;
    DatagramSocket sendReceiveSocket;
+   InputStream is = null;
+   OutputStream os = null;
    byte[] msg;
 
    public SimpleEchoClient()
@@ -20,10 +23,12 @@ public class SimpleEchoClient {
          // port on the local host machine. This socket will be used to
          // send and receive UDP Datagram packets.
          sendReceiveSocket = new DatagramSocket();
+         
       } catch (SocketException se) {   // Can't create the socket.
          se.printStackTrace();
          System.exit(1);
-      }
+      }     
+     
    }
 
    public void sendAndReceive(int readOrWrite)
@@ -31,7 +36,7 @@ public class SimpleEchoClient {
       // Prepare a DatagramPacket and send it via sendReceiveSocket
       // to port 5000 on the destination host.
  
-      String s = "Anyone there?";
+      String s = "";
       System.out.println("Client: sending a packet containing:\n" + s);
 
       // Java stores characters as 16-bit Unicode values, but 
@@ -42,12 +47,13 @@ public class SimpleEchoClient {
 
       //byte msg[] = s.getBytes();
       
-      if(readOrWrite!=10) {
-      constructArray(readOrWrite%2+1,"Test.txt","netascii");
+     /* if(readOrWrite!=10) {
+    	  
+ 	     constructArray(readOrWrite%2+1,readFromFile(),"netascii");
       }
       else {
-    	  constructArray(9,"Test.txt","netascii");
-      }
+    	  constructArray(9,readFromFile(),"netascii");
+      }*/
       
      
       // Construct a datagram packet that is to be sent to a specified port 
@@ -102,19 +108,164 @@ public class SimpleEchoClient {
       // We're finished, so close the socket.
       //sendReceiveSocket.close();
    } 
+   public void sendWriteAndReceive()
+   {    
+      int numPack=0;    //finding out how many time need to send the whole file
+      int blockCount=0;
+      
+	  byte[] fileData  = new byte[512];
+	  System.out.println("Reading file from: "+(path+fileName));
+	  try {
+ 		 is = new FileInputStream((path+fileName));
+ 		 int    bytesRead = is.read(fileData);         
+         while(bytesRead != -1) {    
+        	 numPack++;
+        	 fileData = new byte[512];
+        	 bytesRead = is.read(fileData);
+         }
+         is.close();
+ 	  }
+ 	  catch(Exception e) {
+	         
+	         // if any I/O error occurs
+	         e.printStackTrace();
+ 	  } 
+	  System.out.println("Packages need to send "+numPack);
+      byte[][] fullMsg=new byte[numPack][512];
+	  
+	  
+	  
+	  try {
+	 	  is = new FileInputStream((path+fileName));
+	 	  
+	      for(int i=0; i<numPack;i++)
+	      {
+	    	  is.read(fileData);
+		      fullMsg[i]=fileData;		      
+	      }
+	  }
+	  catch(Exception e) {
+	         
+	         // if any I/O error occurs
+	         e.printStackTrace();
+	  }
+	  
+	  
+	  
+	  System.out.println("Client: sending a packet containing:\n");
+	  constructArray(2,"Test.txt","netascii");
+      try {
+         sendPacket = new DatagramPacket(msg, msg.length,
+                                         InetAddress.getLocalHost(), 23);
+      } catch (UnknownHostException e) {
+         e.printStackTrace();
+         System.exit(1);
+      }
+      printInfoToSend(sendPacket);    
+      
+      
+      try {
+         sendReceiveSocket.send(sendPacket);
+      } catch (IOException e) {
+         e.printStackTrace();
+         System.exit(1);
+      }
 
+      System.out.println("Client: Packet sent.\n");
+
+     
+      byte data1[] = new byte[100];
+      receiving(data1);
+      
+      int blockNum=0;
+      if(data1[1]==(byte)4)
+      {
+    	  if(data1[2]!=0)
+    	  {
+    		  blockNum=(int)data1[2]*10+(int)data1[3];
+    	  }
+    	  else
+    	  {
+    		  blockNum=(int)data1[3];
+    	  }
+      }
+
+      
+     
+      while(blockNum!=numPack)
+      {
+    	  
+    	  sending(fullMsg[blockNum]);
+    	  blockNum++;
+      }
+   } 
+   public void sending(byte[] data)
+   {
+	
+	   try {
+	          sendPacket = new DatagramPacket(data, data.length,
+	                                          InetAddress.getLocalHost(), 23);
+	       } catch (UnknownHostException e) {
+	          e.printStackTrace();
+	          System.exit(1);
+	       }
+	      try {
+	          sendReceiveSocket.send(sendPacket);
+	       } catch (IOException e) {
+	          e.printStackTrace();
+	          System.exit(1);
+	       }
+	      printInfoToSend(sendPacket); 
+   }
+public void receiving (byte[] data1)
+{
+	 
+     receivePacket = new DatagramPacket(data1, data1.length);
+
+     try {
+       
+        sendReceiveSocket.receive(receivePacket);
+     } catch(IOException e) {
+        e.printStackTrace();
+        System.exit(1);
+     }
+     printInfoReceived(receivePacket,data1);
+	
+}
    public static void main(String args[])
    {
       SimpleEchoClient c = new SimpleEchoClient();
-      for(int i=0;i<11;i++) {      
-    	  System.out.println("Rotation : " + i);
-    	  c.sendAndReceive(i);
       
-      }
-      c.sendReceiveSocket.close();
+      //c.sendAndReceive(1);
+      c.sendWriteAndReceive();
+      
+      //c.sendReceiveSocket.close();
    }
    
-
+   private byte[] readFromFile()
+   {
+	  System.out.println("Reading file from: "+path);
+	  byte[] data  = new byte[256];
+	  try {
+ 		 is = new FileInputStream(path);
+ 		 int    bytesRead = is.read(data);         
+         while(bytesRead != -1) {
+        	 System.out.println("lenght= "+bytesRead);
+        	 for(int i=0;i<data.length;i++) {System.out.print((char)data[i]);}        	 
+        	 data      = new byte[256];
+        	  bytesRead = is.read(data);
+        	  System.out.println();
+        	}
+         is.close();
+         System.out.println("Reading done!");
+ 	  }
+ 	  catch(Exception e) {
+	         
+	         // if any I/O error occurs
+	         e.printStackTrace();
+ 	  } 
+	  return data;
+   }
    public void printInfoToSend(DatagramPacket pack) {
 	   /*
 	      
@@ -128,6 +279,7 @@ public class SimpleEchoClient {
 	      System.out.println("Client: Sending packet:");
 	   	  System.out.print("Containing: ");
 	      System.out.println(new String(pack.getData(),0,len)); // or could print "s"
+	      System.out.println("Sending done!");
    }
    public void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
 	   	  System.out.println("Client: Packet received:");
@@ -173,13 +325,13 @@ public class SimpleEchoClient {
     	   dataGramPackage[3+fileByte.length+i] = modeByte[i];
        }
        dataGramPackage[fileByte.length+2] = msg[0];
-       System.out.print("Package in bytes: ");
+       /*System.out.print("Package in bytes: ");
        for(int x = 0;x<dataGramPackage.length;x++) {
     	   System.out.print(dataGramPackage[x]);
        }
        System.out.println("");
        String outgoing = new String(msg,0,msg.length);  
-       System.out.print("Package in string: "+ outgoing);
+       System.out.print("Package in string: "+ outgoing);*/
        /*
       // System.arraycopy(fileByte, 0, data, fileByte.length);
        System.arraycopy(fileByte,0,msg,2+fileByte.length,fileByte.length);

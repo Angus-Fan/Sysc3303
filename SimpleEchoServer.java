@@ -10,9 +10,15 @@ import java.io.*;
 import java.net.*;
 
 public class SimpleEchoServer {
+	byte[] resize = new byte[0];
 	byte[] msg;
+	final String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
 DatagramPacket sendPacket, receivePacket;
 DatagramSocket sendSocket, receiveSocket;
+String fileName;
+InputStream is = null;
+OutputStream os = null;
+int blockCount=0;
 boolean isReading=false;
 public SimpleEchoServer()
 {
@@ -40,7 +46,7 @@ public void receiveAndEcho()
    // Construct a DatagramPacket for receiving packets up 
    // to 100 bytes long (the length of the byte array).
 
-   byte data[] = new byte[100];
+   byte data[] = new byte[512];
    receivePacket = new DatagramPacket(data, data.length);
    System.out.println("Server: Waiting for Packet.\n");
 
@@ -66,43 +72,30 @@ public void receiveAndEcho()
    // Form a String from the byte array.
    String received = new String(data,0,len);   
    System.out.println(received + "\n");
-   if(data[0]==(byte)0)
-   {
-	   if(data[1]==(byte)1)
-	   {
-		   System.out.print("Reading!!! \n");
-		   isReading=true;
-	   }
-	   else 
-		   
-		   if(data[1]==(byte)2)
-	   {
-		   System.out.print("Writting!!! \n" );
-		   
-		   isReading=false;
-	   }
-	   else
-	   {
-		   
-		   System.out.print("ERROR!!!! \n" );
-		  // System.exit(1);
-	   }
-   }
-   else
-   {
-	   
-	   System.out.print("ERROR!!!! \n" );
-	  // System.exit(1);
-   }
-   
+   getOpcode();
+   if(blockCount==0)
+	   parseData();
 	
+   if(!isReading)
+   {
+	   if(blockCount!=0)
+	   {
+		   writting(data);		   
+	   }	   
+	   constructArray();
+	   blockCount++;
+	   
+	   sendPacket = new DatagramPacket(msg, msg.length,
+			   	receivePacket.getAddress(), 23); 
+   }
    try {
        Thread.sleep(0);
    } catch (InterruptedException e ) {
        e.printStackTrace();
        System.exit(1);
    }
-
+   
+   
    // Create a new datagram packet containing the string received from the client.
 
    // Construct a datagram packet that is to be sent to a specified port 
@@ -125,17 +118,18 @@ public void receiveAndEcho()
    //     so we extract the port that the client used to send us the
    //     datagram, and use that as the destination port for the echoed
    //     packet.
-   constructArray();
-   sendPacket = new DatagramPacket(msg, msg.length,
-                            receivePacket.getAddress(), 23);
+   
 
    System.out.println( "Server: Sending packet:");
    System.out.println("To host: " + sendPacket.getAddress());
    System.out.println("Destination host port: " + sendPacket.getPort());
    len = sendPacket.getLength();
    System.out.println("Length: " + len);
-   System.out.print("Containing: ");
-   System.out.println(new String(sendPacket.getData(),0,len));
+   System.out.print("Package in bytes: ");
+   for(int x = 0;x<len;x++) {
+	   System.out.print(sendPacket.getData()[x]);
+   }
+   System.out.println("");
    // or (as we should be sending back the same thing)
    // System.out.println(received); 
      
@@ -151,22 +145,49 @@ public void receiveAndEcho()
 
 
 }
+public void writting(byte[] data)
+{
+	byte[] newData = resize;
+	resize = new byte[resize.length + data.length];
+	System.arraycopy(newData, 0, resize, 0, newData.length);
+	System.arraycopy(data, 0, resize, newData.length, data.length); 
+	try
+	   {
+		   FileOutputStream out = new FileOutputStream(path+fileName);
+		   out.write(resize); 
+		   
+		   out.close();
+	   }
+	   catch(Exception e) {
+	       
+	       // if any I/O error occurs
+	       e.printStackTrace();
+	    }
+	
+	
+}
 public void constructArray() {
-    
-    
-    
-   
+
     msg = new byte[4];
     msg[0] = (byte)0;
     if(isReading)
     	msg[1] = (byte)3;
     else
     	msg[1] = (byte)4;
-    msg[2] = (byte)0;
-    if(isReading)
-    	msg[3] = (byte)1;
-    else
-    	msg[3] = (byte)0;
+    if(!isReading)
+    {
+    	if(blockCount<10)
+    	{
+    		msg[2] = (byte)0;
+    		msg[3] =(byte)blockCount;
+    	}
+    	else
+    	{
+    		msg[2] = (byte)(int)(blockCount%10);
+    		msg[3] =(byte)blockCount;
+    	}
+    	
+    }
     
     byte[] dataGramPackage = new byte[4];
     dataGramPackage[0] = msg[0];
@@ -175,9 +196,31 @@ public void constructArray() {
     dataGramPackage[3] = msg[3];
 
     msg = dataGramPackage;
-    System.out.println("Debug msg length" + msg.length);
+ 
 
 }
+
+private void getOpcode()
+{
+    if(receivePacket.getData()[1] == 1)
+        isReading = true;
+    else
+        isReading = false;
+}
+
+private void parseData() {
+    int i  = 2;
+    int len = 2;
+    // Figures out how long the filename is
+    while(receivePacket.getData()[i] != (byte)0)
+    {
+        len++;
+        i++;
+    }
+    fileName = new String(receivePacket.getData(),2,len-2);
+   
+}
+
 public static void main( String args[] )
 {
    SimpleEchoServer c = new SimpleEchoServer();
