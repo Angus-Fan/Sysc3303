@@ -16,9 +16,10 @@ public class SimpleEchoClient {
   InputStream is = null;
   OutputStream os = null;
   byte[] msg;
-  
+  int blockCount=0;
   public SimpleEchoClient()
   {
+	 
     try {
       // Construct a datagram socket and bind it to any available 
       // port on the local host machine. This socket will be used to
@@ -41,30 +42,42 @@ public class SimpleEchoClient {
     sending(msg);   
     System.out.println("Client: Packet sent.\n");
     
-    byte data[] = new byte[512];
+    byte data[] = new byte[516];
     
     
-    
-    receiving(data);
-    while(data.length>510)
+   
+    int dataSize=receiving(data);
+    while(receivePacket.getData()[1]!=(byte)0)
     {
-    	writting(data);
-    	System.out.println("reading..");
-    	 msg=new byte[4];
-         msg[0]=0;
-         msg[1]=4;
-         msg[2]=0;
-         msg[3]=0;
-        sending(msg);  
-        receiving(data);
+    byte[] newdata = new byte[dataSize];
+    for(int i=0;i<newdata.length;i++)
+    {
+      newdata[i]=data[i];
     }
-    printInfoReceived(receivePacket,data);
+    data=newdata;
+    
+    byte[] toFile= new byte[data.length-4];
+    
+    for(int i =0;i<data.length-4;i++)
+    {
+      toFile[i]=data[i+4];
+      
+    }
+    blockCount++;
+    
+    writting(toFile);
+
+    constructArray();
+    sending(msg);
+    dataSize=receiving(data);
+  }
+    
     
   } 
   public void sendWriteAndReceive()
   {    
     int numPack=0;    //finding out how many time need to send the whole file
-
+    
     
     byte[] fileData  = new byte[512];
     System.out.println("Reading file from: "+(path+fileName));
@@ -84,17 +97,35 @@ public class SimpleEchoClient {
       e.printStackTrace();
     } 
     System.out.println("Packages need to send "+numPack);
-    byte[][] fullMsg=new byte[numPack][512];
+    
+    
     
     
     
     try {
       is = new FileInputStream((path+fileName));
+      System.out.println("Client: sending a packet containing:\n");
+      constructArray(2,"Test.txt","netascii");
+      sending(msg);
       
-      for(int i=0; i<numPack;i++)
+      System.out.println("Client: Packet sent.\n");
+      
+      
+      byte data1[] = new byte[100];
+      receiving(data1);
+      
+      int blockNum=0;
+      while(blockNum!=numPack)
       {
+        fileData=new byte[512];
         is.read(fileData);
-        fullMsg[i]=fileData;        
+        fileData=trimByteArr(fileData);
+        
+        System.out.println("sending block num "+blockNum);
+        sending(createDataPacket(3,blockNum,fileData));
+        
+        blockNum++;
+        receiving(data1);
       }
       is.close();
     }
@@ -103,43 +134,31 @@ public class SimpleEchoClient {
       // if any I/O error occurs
       e.printStackTrace();
     }
-    
-    
-    
-    System.out.println("Client: sending a packet containing:\n");
-    constructArray(2,"Test.txt","netascii");
-    sending(msg);
-    
-    System.out.println("Client: Packet sent.\n");
-    
-    
-    byte data1[] = new byte[100];
-    receiving(data1);
-    
-    int blockNum=0;
-    if(data1[1]==(byte)4)
-    {
-      if(data1[2]!=0)
-      {
-        blockNum=(int)data1[2]*10+(int)data1[3];
-      }
-      else
-      {
-        blockNum=(int)data1[3];
-      }
-    }
-    
-    
-    
-    while(blockNum!=numPack)
-    {
-      
-      sending(fullMsg[blockNum]);
-      blockNum++;
-    }
   } 
   
-  
+  public byte[] createDataPacket(int opCode,int dataBlock,byte[] data) {
+    byte[] dataPack =new byte[4];
+    dataPack[0]=(byte)0;
+    dataPack[1]=(byte)3;
+    dataPack[2]=(byte)((int)dataBlock/10);
+    dataPack[3]=(byte)((int)dataBlock%10);
+    byte[] temp=new byte[4+data.length];
+    temp[0]=dataPack[0];
+    temp[1]=dataPack[1];
+    temp[2]=dataPack[2];
+    temp[3]=dataPack[3];
+    for(int i=0;i<data.length;i++)
+    {
+      temp[i+4]=data[i];
+    }     
+    System.out.println("Create packet's packet = ");
+    for(int x = 0; x<temp.length;x++) {
+      System.out.print((char)temp[x]);
+    }
+    System.out.println("");
+    return temp;
+    
+  }
   public void sending(byte[] data)
   {
     
@@ -181,7 +200,7 @@ public class SimpleEchoClient {
     
     
   }
-  public void receiving (byte[] data1)
+  public int receiving (byte[] data1)
   {
     
     receivePacket = new DatagramPacket(data1, data1.length);
@@ -194,19 +213,12 @@ public class SimpleEchoClient {
       System.exit(1);
     }
     printInfoReceived(receivePacket,data1);
-    
-  }
-  public static void main(String args[])
-  {
-    SimpleEchoClient c = new SimpleEchoClient();
-    
-    //c.sendAndReceive(1);
-    c.sendReadAndReceive();
-    
-    //c.sendReceiveSocket.close();
+    System.out.println("pack size= "+receivePacket.getLength());
+    return receivePacket.getLength();
   }
   
- 
+  
+  
   public void printInfoToSend(DatagramPacket pack) {
     /*
      * 
@@ -235,11 +247,26 @@ public class SimpleEchoClient {
     
     
   }
-  
+  public byte[] trimByteArr(byte[] data)
+  {
+	  int i=0;
+	  for(i =0;i<data.length;i++)
+	  {
+		  if(data[i]==(byte)0)
+			  break;
+	  }
+	  byte [] temp=new byte[i];
+	  for(i=0;i<temp.length;i++)
+	  {
+		  temp[i]=data[i];
+	  }
+	  return temp;
+  }
   public int getLen(DatagramPacket pack) {
     return pack.getLength();
   }
   public void constructArray(int request,String file,String mode) {
+
     byte zero[] = new byte[1];
     byte fileByte [] = file.getBytes();
     
@@ -284,5 +311,44 @@ public class SimpleEchoClient {
      }*/
     msg = dataGramPackage;
     
+  }
+  public void constructArray() {
+	    
+	    msg = new byte[4];
+	    msg[0] = (byte)0;
+	    
+	      msg[1] = (byte)3;
+	    
+	      if(blockCount<10)
+	      {
+	        msg[2] = (byte)0;
+	        msg[3] =(byte)blockCount;
+	      }
+	      else
+	      {
+	        msg[2] = (byte)(int)(blockCount%10);
+	        msg[3] =(byte)blockCount;
+	      }
+	      
+	    
+	    
+	    byte[] dataGramPackage = new byte[4];
+	    dataGramPackage[0] = msg[0];
+	    dataGramPackage[1] = msg[1];
+	    dataGramPackage[2] = msg[2];
+	    dataGramPackage[3] = msg[3];
+	    
+	    msg = dataGramPackage;
+	    
+	    
+	  }
+  public static void main(String args[])
+  {
+    SimpleEchoClient c = new SimpleEchoClient();
+    
+    //c.sendAndReceive(1);
+    c.sendWriteAndReceive();
+    c.sendReadAndReceive();
+    //c.sendReceiveSocket.close();
   }
 }

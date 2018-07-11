@@ -22,9 +22,12 @@ public class InterHost {
   } 
   
   public void receiveAndSend() {
-    byte data[] = new byte[512];
+    byte data[] = new byte[516];
+    
     receivePacket = new DatagramPacket(data,data.length);
-    trimmedReceivePacket = new DatagramPacket(data,data.length);
+    
+    
+    
     
     
     System.out.println("Created receive packet will attempt wait");
@@ -38,6 +41,13 @@ public class InterHost {
       System.out.println("IOException on waiting");
       System.exit(1);
     }
+    byte newdata[] = new byte[receivePacket.getLength()];
+    for(int i =0;i<newdata.length;i++)
+    {
+      newdata[i]=data[i];
+    }
+    data=newdata;
+    System.out.println("the new data len= "+newdata.length);
     if(!fromClient) {
       clientPort = receivePacket.getPort();
       fromClient = true;
