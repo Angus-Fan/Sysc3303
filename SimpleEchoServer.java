@@ -8,6 +8,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
 
 public class SimpleEchoServer {
   byte[] resize = new byte[0];
@@ -410,10 +411,14 @@ public class SimpleEchoServer {
   public static void main( String args[] )
   {
     SimpleEchoServer c = new SimpleEchoServer();
+    Scanner keyboard = new Scanner(System.in);
     while(true) {
       c.receiveAndEcho();
+      System.out.println("Type 1 to close the server or 0 to continue");
+      if(keyboard.nextInt() == 1)
+    	  break;
     }
-    
+    keyboard.close();
   }
   
 }
