@@ -1,15 +1,17 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 
 public class ErrorSimulator {
-  
-  DatagramPacket sendPacket, receivePacket, trimmedReceivePacket;
-  DatagramSocket sendSocket, receiveSocket;
-  int clientPort;
-  int portToSend;
-  boolean fromClient = false;
-  
+
+  private DatagramPacket sendPacket, receivePacket, trimmedReceivePacket;
+  private DatagramSocket sendSocket, receiveSocket;
+  private int serverPort=69;
+  private int portToSend;
+  private boolean getServerTip = false;
+  private ArrayList<Integer> clientsTID=new ArrayList<Integer>();
+  private ArrayList<Integer> serversTID=new ArrayList<Integer>();
   public ErrorSimulator() {
     try {
       sendSocket = new DatagramSocket();
@@ -19,9 +21,9 @@ public class ErrorSimulator {
       se.printStackTrace();
       System.exit(1);   
     }
-  } 
-  
-  public void receiveAndSend() {
+  }
+
+  private void receiveAndSend() {
     byte data[] = new byte[516];
     
     receivePacket = new DatagramPacket(data,data.length);
@@ -48,23 +50,42 @@ public class ErrorSimulator {
     }
     data=newdata;
     System.out.println("the new data len= "+newdata.length);
+    if(getServerTip)
+    {
+      serversTID.add(receivePacket.getPort());
+      getServerTip=false;
+    }
+    else if(data[1]==1||data[1]==2)
+    {
+      clientsTID.add(receivePacket.getPort());
+      getServerTip=true;
+    }
+    /*
     if(!fromClient) {
       clientPort = receivePacket.getPort();
       fromClient = true;
     }
-    portToSend = flipPort(receivePacket);
+    portToSend = flipPort(receivePacket);*/
     
     
     
     printInfoReceived(receivePacket,data);
-    // Slow things down (wait 2 seconds)
-    try {
-      Thread.sleep(0);
-    } catch (InterruptedException e ) {
-      e.printStackTrace();
-      System.exit(1);
+    if(data[1]==1||data[1]==2)
+    {
+      portToSend=serverPort;
     }
-    
+    else if(serversTID.contains(receivePacket.getPort()))
+    {
+      portToSend=clientsTID.get(serversTID.indexOf(receivePacket.getPort()));
+    }
+    else if (clientsTID.contains(receivePacket.getPort()))
+    {
+      portToSend=serversTID.get(clientsTID.indexOf(receivePacket.getPort()));
+    }
+    else
+    {
+      System.out.println("ERROR: UNKNOWN DESTINATION");
+    }
     sendPacket = new DatagramPacket(data, receivePacket.getLength(),
                                     receivePacket.getAddress(), portToSend);
     
@@ -90,21 +111,14 @@ public class ErrorSimulator {
   
   
   
-  public static void main( String args[] )
-  {
-    ErrorSimulator IH = new ErrorSimulator();
-    
-    while(true) {
-      IH.receiveAndSend();
-    } 
-  }
+
   
   
   
   
   //Additional Helper Functions
   //IO DISPLAY FUNCTIONS
-  public void printInfoToSend(DatagramPacket pack) {
+  private void printInfoToSend(DatagramPacket pack) {
     System.out.println("InterHost: Sending packet:");
     //  System.out.println("To host: " + pack.getAddress());
     // System.out.println("Destination host port: " + pack.getPort());
@@ -113,7 +127,7 @@ public class ErrorSimulator {
     System.out.print("Containing: ");
     System.out.println(new String(pack.getData(),0,len)); // or could print "s"
   }
-  public void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
+  private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
     System.out.println("InterHost: Packet received:");
     //   System.out.println("From host: " + pack.getAddress());
     // System.out.println("Host port: " + pack.getPort());
@@ -135,18 +149,26 @@ public class ErrorSimulator {
     
     
   }
-  
-  public int flipPort(DatagramPacket pack) {
+/*
+  private int flipPort(DatagramPacket pack) {
     if(pack.getPort()==clientPort) {
       return 69;
     }
     else {
       return clientPort;
     }
-  }
-  
-  public int getLen(DatagramPacket pack) {
+  }*/
+
+  private int getLen(DatagramPacket pack) {
     return pack.getLength();
+  }
+  public static void main( String args[] )
+  {
+    ErrorSimulator IH = new ErrorSimulator();
+
+    while(true) {
+      IH.receiveAndSend();
+    }
   }
   
 }

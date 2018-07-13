@@ -11,50 +11,46 @@ import java.net.*;
 import java.util.Scanner;
 
 public class SimpleEchoServer {
-  byte[] resize = new byte[0];
-  byte[] msg;
-  final String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
-  DatagramPacket sendPacket, receivePacket;
-  DatagramSocket sendSocket, receiveSocket;
-  String fileName;
-  InputStream is = null;
-  OutputStream os = null;
-  int blockCount=0;
-  boolean isReading=false;
+  private DatagramPacket receivePacket;
+  private DatagramSocket  receiveSocket;
+  private int connectionCount=0;
+
+  private final String path="C:\\Users\\michael\\Desktop\\3303\\server\\";
+
   public SimpleEchoServer()
   {
     try {
-      // Construct a datagram socket and bind it to any available 
+      // Construct a datagram socket and bind it to any available
       // port on the local host machine. This socket will be used to
       // send UDP Datagram packets.
-      sendSocket = new DatagramSocket();
-      
-      // Construct a datagram socket and bind it to port 5000 
+
+
+      // Construct a datagram socket and bind it to port 5000
       // on the local host machine. This socket will be used to
       // receive UDP Datagram packets.
       receiveSocket = new DatagramSocket(69);
-      
+
       // to test socket timeout (2 seconds)
       //receiveSocket.setSoTimeout(2000);
     } catch (SocketException se) {
       se.printStackTrace();
       System.exit(1);
-    } 
+    }
   }
-  
-  public void receiveAndEcho()
+
+  private void receiveAndEcho()
   {
-    // Construct a DatagramPacket for receiving packets up 
+    // Construct a DatagramPacket for receiving packets up
     // to 100 bytes long (the length of the byte array).
-    
+
     byte data[] = new byte[516];
-    
+
     receivePacket = new DatagramPacket(data, data.length);
-    
+
     System.out.println("Server: Waiting for Packet.\n");
-    
+
     // Block until a datagram packet is received from receiveSocket.
-    try {        
+    try {
       System.out.println("Waiting..."); // so we know we're waiting
       receiveSocket.receive(receivePacket);
     } catch (IOException e) {
@@ -63,16 +59,8 @@ public class SimpleEchoServer {
       e.printStackTrace();
       System.exit(1);
     }
-    
-    /*byte newdata[]=new byte[receivePacket.getLength()];
-     * 
-     for(int i=0;i<newdata.length;i++)
-     {
-     newdata[i]=data[i];
-     
-     }
-     data=newdata;*/
-    
+
+
     // Process the received datagram.
     System.out.println("Server: Packet received:");
     System.out.println("From host: " + receivePacket.getAddress());
@@ -80,321 +68,305 @@ public class SimpleEchoServer {
     int len = receivePacket.getLength();
     System.out.println("Length: " + len);
     System.out.print("Containing: " );
-    
-    // Form a String from the byte array.
-    String received = new String(data,0,len);   
-    System.out.println(received + "\n");
-    
-    if(blockCount==0||isReading)
-      parseData();
-    
-    if(getOpcode()==4)
-    {
-    	System.out.println("Reading.......");
-    }
-    else if(getOpcode()==3)
-    {
-      System.out.println("writting.......");
-      byte[] toFile= new byte[data.length-4];
-      
-      for(int i =0;i<data.length-4;i++)
-      {
-        toFile[i]=data[i+4];
-        
-      }
-      blockCount++;
-      toFile=trimByteArr(toFile);
-      writting(toFile);
-      isReading=false;
-      constructArray();
-      sending(msg);
-    }
-    else if(getOpcode()==2)
-    {
-      System.out.println("writting...");
-      isReading=false;
-      constructArray();
-      sending(msg);
-    }    
-    else if(getOpcode()==1)
-    {
-    	int numPack=0;    //finding out how many time need to send the whole file
-        
-        
-        byte[] fileData  = new byte[512];
-        System.out.println("Reading file from: "+(path+fileName));
-        try {
-          is = new FileInputStream((path+"Test.txt"));
-          int    bytesRead = is.read(fileData);         
-          while(bytesRead != -1) {    
-            numPack++;
-            fileData = new byte[512];
-            bytesRead = is.read(fileData);
-          }
-          is.close();
-        }
-        catch(Exception e) {
-          
-          // if any I/O error occurs
-          e.printStackTrace();
-        } 
-        System.out.println("Packages need to send "+numPack);
-        File file = new File(path+"Test.txt");
-        int size = (int)file.length();
-        int finalPacket = size%numPack;
-        
-        
-        
-        try {
-          is = new FileInputStream((path+"Test2.txt"));
-          
-          
-          
-          
-          
-          
-          
-          
-          int blockNum=0;
-          while(blockNum!=numPack)
-          {
-        	if(blockNum == numPack)
-        	{
-        		 fileData=new byte[finalPacket];
-                 is.read(fileData);
-                // fileData=trimByteArr(fileData);
-                 
-                 System.out.println("sending block num "+blockNum);
-                 sending(createDataPacket(3,blockNum,fileData));
-                 
-                 blockNum++;
-                 receiving(data);
-        	}
-        	else {
-	            fileData=new byte[512];
-	            is.read(fileData);
-	            fileData=trimByteArr(fileData);
-	            
-	            System.out.println("sending block num "+blockNum);
-	            sending(createDataPacket(3,blockNum,fileData));
-	            
-	            blockNum++;
-	            receiving(data);
-        	}
-          }
-          is.close();
-          
-          byte[] endOpCode=new byte[2];
-          endOpCode[0]=(byte)0;
-          endOpCode[1]=(byte)0;
-          sending(endOpCode);
-          
-        }
-        catch(Exception e) {
-          
-          // if any I/O error occurs
-          e.printStackTrace();
-        }
-    }
-    /*
-      int numPack=0;    //finding out how many time need to send the whole file
-      int blockCount=0;
-      byte[] fileData  = new byte[512];
-      System.out.println("Reading file from: "+(path+fileName));
-      try {
-        is = new FileInputStream((path+fileName));
-        int    bytesRead = is.read(fileData);         
-        while(bytesRead != -1) {    
-          numPack++;
-          
-          fileData = new byte[512];
-          bytesRead = is.read(fileData);
-          
-        }
-        is.close();
-      }
-      catch(Exception e) {
-        
-        // if any I/O error occurs
-        e.printStackTrace();
-      } 
-      System.out.println("Packages need to send "+numPack);
-      //byte[][] fullMsg=new byte[numPack][512];
-      
-      blockCount=0;
-      
-      
-      
-      
-        is.read(fileData);
-      sending(fileData);
-      blockCount++;
-      while(blockCount!=numPack)
-      {
-        receiving(data);
-        fileData=new byte[512];
-        is.read(fileData);
-        sending(createDataPacket(3,blockCount,trimByteArr(fileData)));
-        blockCount++;
-      }
-      receiving(data);
-      msg=new byte[1];
-      sending(msg);
-      
-      
-    }
-    
-    catch(Exception e) {
-      
-      // if any I/O error occurs
-      e.printStackTrace();
-    }*/
-    
-    /*
-     try {
-     Thread.sleep(0);
-     } catch (InterruptedException e ) {
-     e.printStackTrace();
-     System.exit(1);
-     }*/
 
- 
+    // Form a String from the byte array.
+    String received = new String(data,0,len);
+    System.out.println(received + "\n");
+
+    Connection connection=new Connection(receivePacket,connectionCount++);
+    connection.start();
+
   }
-  
-  
-  public byte[] createDataPacket(int opCode,int dataBlock,byte[] data) {
-	    byte[] dataPack =new byte[4];
-	    dataPack[0]=(byte)0;
-	    dataPack[1]=(byte)3;
-	    dataPack[2]=(byte)((int)dataBlock/10);
-	    dataPack[3]=(byte)((int)dataBlock%10);
-	    byte[] temp=new byte[4+data.length];
-	    temp[0]=dataPack[0];
-	    temp[1]=dataPack[1];
-	    temp[2]=dataPack[2];
-	    temp[3]=dataPack[3];
-	    for(int i=0;i<data.length;i++)
-	    {
-	      temp[i+4]=data[i];
-	    }     
-	    System.out.println("Create packet's packet = ");
-	    for(int x = 0; x<temp.length;x++) {
-	      System.out.print((char)temp[x]);
-	    }
-	    System.out.println("");
-	    return temp;
-	    
-	  }
-  public byte[] trimByteArr(byte[] data)
+
+  public static void main(String args[])
   {
-	  int i=0;
-	  for(i =0;i<data.length;i++)
-	  {
-		  if(data[i]==(byte)0)
-			  break;
-	  }
-	  byte [] temp=new byte[i];
-	  for(i=0;i<temp.length;i++)
-	  {
-		  temp[i]=data[i];
-	  }
-	  return temp;
+    SimpleEchoServer c = new SimpleEchoServer();
+    Scanner keyboard = new Scanner(System.in);
+    while(true) {
+      c.receiveAndEcho();
+      System.out.println("Type 1 to close the server or 0 to continue");
+      if(keyboard.nextInt() == 1)
+        break;
+    }
+    keyboard.close();
   }
-  public void sending(byte[] data)
+
+}
+class Connection extends Thread
+{
+  private DatagramPacket sendPacket, receivePacket;
+  private DatagramSocket sendReceiveSocket;
+  private final String path="C:\\Users\\michael\\Desktop\\3303\\server\\";
+  private InputStream is = null;
+  private OutputStream os = null;
+  private String fileName="";
+  private byte[] msg=new byte[4];
+  private int blockCount=0;
+  private byte[] data;
+  private boolean overWritten=true;
+  private int connectionID;
+  private byte [][] fullFileData;
+  public Connection(DatagramPacket packet, int connectionID)
   {
-    System.out.println("Server: packet sent:    "+data.length);
+    System.out.println("Connection"+connectionID+" been created!");
+    this.connectionID=connectionID;
+    receivePacket=packet;
+    try {
+
+      sendReceiveSocket = new DatagramSocket();
+
+
+
+    } catch (SocketException se) {
+      se.printStackTrace();
+      System.exit(1);
+    }
+
+  }
+  public void run()
+  {
+    System.out.println("Connection"+connectionID+" port= "+sendReceiveSocket.getLocalPort());
+    parseData();
+    while(true) {
+      if (getOpcode() == 0)
+      {
+        overWritten=true;
+        break;
+      }
+      if (getOpcode() == 3) {
+        System.out.println("Connection"+connectionID+" received data package");
+        byte[] toFile = new byte[data.length - 4];
+        for (int i = 0; i < data.length - 4; i++)
+          toFile[i] = data[i + 4];
+        blockCount++;
+        toFile = trimByteArr(toFile);
+        fileIO(2,toFile);
+        constructArray();
+        sending(msg);
+      } else if (getOpcode() == 2)    //Writing request
+      {
+        System.out.println("Connection"+connectionID+" received writing request");
+        blockCount=1;
+        constructArray();
+        sending(msg);
+      } else if (getOpcode() == 1)   //Reading request
+      {
+        int numPack;    //finding out how many time need to send the whole file
+
+
+        byte[] fileData = new byte[512];
+        System.out.println("Reading file from: " + (path + fileName));
+        fileIO(1,null);
+
+
+
+
+          int blockNum = 0;
+          while (true) {
+            if (blockNum == fullFileData.length) {
+              System.out.println("sending block num " + blockNum);
+              sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length-1]));
+              data = new byte[4];
+              receiving(data);
+              System.out.println("Connection"+connectionID+" received ACK");
+              break;
+            } else {
+              System.out.println("sending block num " + blockNum);
+              sending(createDataPacket(3, blockNum, fullFileData[blockNum]));
+              blockNum++;
+              data = new byte[4];
+              receiving(data);
+              System.out.println("Connection"+connectionID+" received ACK");
+            }
+          }
+
+
+          byte[] endOpCode = new byte[2];// the ending code
+          endOpCode[0] = (byte) 0;
+          endOpCode[1] = (byte) 0;
+          sending(endOpCode);
+          break;
+
+
+      }
+      data=new byte[512];
+      receiving(data);
+    }
+  }
+  private synchronized void fileIO(int readWrite,byte[] data)
+  {
+    if(readWrite==1) //reading
+    {
+
+      int numPack;    //finding out how many time need to send the whole file
+      byte[] fileData;
+      System.out.println("Reading file from: " + (path + fileName));
+      File file = new File(path + "Test.txt");
+      int size = (int) file.length();
+      numPack = (int) Math.ceil(size / 512.0);
+      int finalPacket = 0;
+      if (numPack != 0)
+        finalPacket = size % numPack;
+      System.out.println("Packages need to send " + numPack);
+      fullFileData=new byte[numPack][512];
+      fullFileData[numPack-1]=new byte[finalPacket];
+      try {
+        is = new FileInputStream( (path + fileName));
+        for(int i =0;i<numPack-1;i++){
+          fileData = new byte[512];
+          is.read(fileData);
+          fullFileData[i]=fileData;
+        }
+        fileData = new byte[finalPacket];
+        is.read(fileData);
+        fullFileData[numPack-1]=fileData;
+        is.close();
+
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      System.out.println("fullfiledata---------------------------------");
+      for(int i =0;i<fullFileData.length;i++)
+      {
+        String str=new String(fullFileData[i],0,fullFileData[i].length);
+        System.out.println(str);
+      }
+      System.out.println("fullfiledata---------------------------------");
+    }
+    else
+    {
+      writing(data);
+    }
+  }
+
+  private byte[] createDataPacket(int opCode,int dataBlock,byte[] data) {
+    byte[] dataPack =new byte[4];
+    dataPack[0]=(byte)0;
+    dataPack[1]=(byte)3;
+    dataPack[2]=(byte)Math.floor(dataBlock/10);
+    dataPack[3]=(byte)(dataBlock%10);
+    byte[] temp=new byte[4+data.length];
+    temp[0]=dataPack[0];
+    temp[1]=dataPack[1];
+    temp[2]=dataPack[2];
+    temp[3]=dataPack[3];
+    for(int i=0;i<data.length;i++)
+    {
+      temp[i+4]=data[i];
+    }
+    /*System.out.println("Creating packet = ");
+    for(int x = 0; x<temp.length;x++) {
+      System.out.print((char)temp[x]);
+    }
+    System.out.println("");*/
+    return temp;
+
+  }
+  private byte[] trimByteArr(byte[] data)
+  {
+    int i=0;
+    for(i =0;i<data.length;i++)
+    {
+      if(data[i]==(byte)0)
+        break;
+    }
+    byte [] temp=new byte[i];
+    for(i=0;i<temp.length;i++)
+    {
+      temp[i]=data[i];
+    }
+    return temp;
+  }
+  private void sending(byte[] data)
+  {
+    String str = new String(data,0,data.length);
+    System.out.println("Connection"+connectionID+" sending package= "+str);
     try {
       sendPacket = new DatagramPacket(data, data.length,
-                                      receivePacket.getAddress(), 23); 
-      sendSocket.send(sendPacket);
+              receivePacket.getAddress(), 23);
+      sendReceiveSocket.send(sendPacket);
     } catch (IOException e) {
       e.printStackTrace();
       System.exit(1);
     }
-    
-    System.out.println("Server: packet sent");
+
+
   }
-  public void writting(byte[] data)
+  private void writing(byte[] data)
   {
-    
-    System.out.println("data len="+data.length);
-    byte[] newData = resize;
+
+    //System.out.println("data len="+data.length);
+
+    /*byte[] newData = resize;
     resize = new byte[resize.length + data.length];
     System.arraycopy(newData, 0, resize, 0, newData.length);
-    System.arraycopy(data, 0, resize, newData.length, data.length); 
-    
-    
-    
+    System.arraycopy(data, 0, resize, newData.length, data.length);
+*/
     try
     {
-      FileOutputStream out = new FileOutputStream(path+"Test.txt");
-      out.write(resize); 
-      
+      FileOutputStream out = new FileOutputStream(path+"Test.txt",!overWritten);
+      overWritten=false;
+      out.write(data);
+
       out.close();
     }
     catch(Exception e) {
-      
+
       // if any I/O error occurs
       e.printStackTrace();
     }
-    
-    
+
+
   }
-  public void receiving (byte[] data1)
+  private void receiving (byte[] data)
   {
-    
-    receivePacket = new DatagramPacket(data1, data1.length);
-    
+
+    receivePacket = new DatagramPacket(data, data.length);
+
     try {
-      
-      receiveSocket.receive(receivePacket);
+
+      sendReceiveSocket.receive(receivePacket);
     } catch(IOException e) {
       e.printStackTrace();
       System.exit(1);
     }
-    System.out.println("data receivied");
-    
+    //System.out.println("data receivied");
+
   }
-  public void constructArray() {
-    
+  private void constructArray() {
+
     msg = new byte[4];
     msg[0] = (byte)0;
-    if(isReading)
-      msg[1] = (byte)3;
-    else
-      msg[1] = (byte)4;
-    if(!isReading)
+    msg[1] = (byte)4;
+    if(blockCount<10)
     {
-      if(blockCount<10)
-      {
-        msg[2] = (byte)0;
-        msg[3] =(byte)blockCount;
-      }
-      else
-      {
-        msg[2] = (byte)(int)(blockCount%10);
-        msg[3] =(byte)blockCount;
-      }
-      
+      msg[2] = (byte)0;
+      msg[3] =(byte)blockCount;
     }
-    
+    else
+    {
+      msg[2] = (byte)(int)(blockCount%10);
+      msg[3] =(byte)blockCount;
+    }
+
+
     byte[] dataGramPackage = new byte[4];
     dataGramPackage[0] = msg[0];
     dataGramPackage[1] = msg[1];
     dataGramPackage[2] = msg[2];
     dataGramPackage[3] = msg[3];
-    
+
     msg = dataGramPackage;
-    
-    
+
+
   }
-  
+
   private int getOpcode()
   {
     return receivePacket.getData()[1];
-    
+
   }
-  
+
   private void parseData() {
     int i  = 2;
     int len = 2;
@@ -405,21 +377,6 @@ public class SimpleEchoServer {
       i++;
     }
     fileName = new String(receivePacket.getData(),2,len-2);
-    
-  }
-  
-  public static void main( String args[] )
-  {
-    SimpleEchoServer c = new SimpleEchoServer();
-    Scanner keyboard = new Scanner(System.in);
-    while(true) {
-      c.receiveAndEcho();
-      System.out.println("Type 1 to close the server or 0 to continue");
-      if(keyboard.nextInt() == 1)
-    	  break;
-    }
-    keyboard.close();
-  }
-  
-}
 
+  }
+}

@@ -8,15 +8,17 @@ import java.io.*;
 import java.net.*;
 
 public class SimpleEchoClient {
-  byte[] resize = new byte[0];
-  final String path="C:\\Users\\michaelwang3\\Desktop\\";
-  final String fileName="Test.txt";
-  DatagramPacket sendPacket, receivePacket;
-  DatagramSocket sendReceiveSocket;
-  InputStream is = null;
-  OutputStream os = null;
-  byte[] msg;
-  int blockCount=0;
+  private byte[] resize = new byte[0];
+  private final String path="C:\\Users\\michael\\Desktop\\3303\\";
+  private final String fileName="Test.txt";
+  private DatagramPacket sendPacket, receivePacket;
+  private DatagramSocket sendReceiveSocket;
+  private InputStream is = null;
+  private OutputStream os = null;
+  private byte[] msg;
+  private int blockCount=0;
+
+
   public SimpleEchoClient()
   {
 	 
@@ -30,10 +32,10 @@ public class SimpleEchoClient {
       se.printStackTrace();
       System.exit(1);
     }     
-    
+
   }
-  
-  public void sendReadAndReceive()
+
+  private void sendReadAndReceive()
   {
     
     
@@ -73,8 +75,8 @@ public class SimpleEchoClient {
   }
     
     
-  } 
-  public void sendWriteAndReceive()
+  }
+  private void sendWriteAndReceive()
   {    
     int numPack=0;    //finding out how many time need to send the whole file
     
@@ -134,9 +136,9 @@ public class SimpleEchoClient {
       // if any I/O error occurs
       e.printStackTrace();
     }
-  } 
-  
-  public byte[] createDataPacket(int opCode,int dataBlock,byte[] data) {
+  }
+
+  private byte[] createDataPacket(int opCode,int dataBlock,byte[] data) {
     byte[] dataPack =new byte[4];
     dataPack[0]=(byte)0;
     dataPack[1]=(byte)3;
@@ -159,7 +161,7 @@ public class SimpleEchoClient {
     return temp;
     
   }
-  public void sending(byte[] data)
+  private void sending(byte[] data)
   {
     
     try {
@@ -177,8 +179,8 @@ public class SimpleEchoClient {
     }
     printInfoToSend(sendPacket); 
   }
-  
-  public void writting(byte[] data)
+
+  private void writting(byte[] data)
   {
     System.out.println("data len="+data.length);
     byte[] newData = resize;
@@ -200,7 +202,7 @@ public class SimpleEchoClient {
     
     
   }
-  public int receiving (byte[] data1)
+  private int receiving (byte[] data1)
   {
     
     receivePacket = new DatagramPacket(data1, data1.length);
@@ -216,10 +218,10 @@ public class SimpleEchoClient {
     System.out.println("pack size= "+receivePacket.getLength());
     return receivePacket.getLength();
   }
-  
-  
-  
-  public void printInfoToSend(DatagramPacket pack) {
+
+
+
+  private void printInfoToSend(DatagramPacket pack) {
     /*
      * 
      System.out.println("To host: " + pack.getAddress());
@@ -234,7 +236,7 @@ public class SimpleEchoClient {
     System.out.println(new String(pack.getData(),0,len)); // or could print "s"
     System.out.println("Sending done!");
   }
-  public void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
+  private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
     System.out.println("Client: Packet received:");
     //System.out.println("From host: " + pack.getAddress());
     //System.out.println("Host port: " + pack.getPort());
@@ -247,7 +249,7 @@ public class SimpleEchoClient {
     
     
   }
-  public byte[] trimByteArr(byte[] data)
+  private byte[] trimByteArr(byte[] data)
   {
 	  int i=0;
 	  for(i =0;i<data.length;i++)
@@ -262,10 +264,10 @@ public class SimpleEchoClient {
 	  }
 	  return temp;
   }
-  public int getLen(DatagramPacket pack) {
+  private int getLen(DatagramPacket pack) {
     return pack.getLength();
   }
-  public void constructArray(int request,String file,String mode) {
+  private void constructArray(int request,String file,String mode) {
 
     byte zero[] = new byte[1];
     byte fileByte [] = file.getBytes();
@@ -312,7 +314,7 @@ public class SimpleEchoClient {
     msg = dataGramPackage;
     
   }
-  public void constructArray() {
+  private void constructArray() {
 	    
 	    msg = new byte[4];
 	    msg[0] = (byte)0;
@@ -347,7 +349,7 @@ public class SimpleEchoClient {
     SimpleEchoClient c = new SimpleEchoClient();
     
     //c.sendAndReceive(1);
-    c.sendWriteAndReceive();
+    //c.sendWriteAndReceive();
     c.sendReadAndReceive();
     //c.sendReceiveSocket.close();
   }
