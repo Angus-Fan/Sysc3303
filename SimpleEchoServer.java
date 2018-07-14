@@ -106,6 +106,11 @@ class Connection extends Thread
     private boolean overWritten=true;
     private int connectionID;
     private byte [][] fullFileData;
+    private int errorCode=8;
+    private int fileNameLen;
+    private byte[] netascii = "netascii".getBytes();
+
+    private String errorMsg;
     public Connection(DatagramPacket packet, int connectionID)
     {
         System.out.println("Connection"+connectionID+" been created!");
@@ -126,71 +131,86 @@ class Connection extends Thread
     public void run()
     {
         System.out.println("Connection"+connectionID+" port= "+sendReceiveSocket.getLocalPort());
-        parseData();
-        while(true) {
-            if (getOpcode() == 0)
-            {
 
-                break;
-            }
-            if (getOpcode() == 3) {
-                System.out.println("Connection"+connectionID+" received data package");
-                 byte[] toFile = new byte[data.length - 4];
-                for (int i = 0; i < data.length - 4; i++)
-                    toFile[i] = data[i + 4];
-                blockCount++;
-                toFile = trimByteArr(toFile);
-                fileIO(2,toFile);
-                constructArray();
-                sending(msg);
-            } else if (getOpcode() == 2)    //Writing request
-            {
-                System.out.println("Connection"+connectionID+" received writing request");
-                blockCount=1;
-                constructArray();
-                sending(msg);
-            } else if (getOpcode() == 1)   //Reading request
-            {
-                int numPack;    //finding out how many time need to send the whole file
+        errorCheck();
+        if(errorCode==8) {
+            while (true) {
+                if (getOpcode() == 0) {
 
-
-                byte[] fileData = new byte[512];
-
-                fileIO(1,null);
-
-
-
-
-                int blockNum = 0;
-                while (true) {
-                    if (blockNum+1 == fullFileData.length) {
-                        System.out.println("sending block num " + blockNum);
-                        sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length-1]));
-                        data = new byte[4];
-                        receiving(data);
-                        System.out.println("Connection"+connectionID+" received ACK");
-                        break;
-                    } else {
-                        System.out.println("sending block num " + blockNum);
-                        sending(createDataPacket(3, blockNum, fullFileData[blockNum]));
-                        blockNum++;
-                        data = new byte[4];
-                        receiving(data);
-                        System.out.println("Connection"+connectionID+" received ACK");
-                    }
+                    break;
                 }
+                if (getOpcode() == 3) {
+                    System.out.println("Connection" + connectionID + " received data package");
+                    byte[] toFile = new byte[data.length - 4];
+                    for (int i = 0; i < data.length - 4; i++)
+                        toFile[i] = data[i + 4];
+                    toFile = trimByteArr(toFile);
+                    fileIO(2, toFile);
+                    constructArray();
+                    blockCount++;
+                    sending(msg);
+                } else if (getOpcode() == 2)    //Writing request
+                {
+                    System.out.println("Connection" + connectionID + " received writing request");
+                    blockCount = 1;
+                    constructArray();
+                    sending(msg);
+                } else if (getOpcode() == 1)   //Reading request
+                {
+                    int numPack;    //finding out how many time need to send the whole file
 
 
-                byte[] endOpCode = new byte[2];// the ending code
-                endOpCode[0] = (byte) 0;
-                endOpCode[1] = (byte) 0;
-                sending(endOpCode);
-                break;
+                    byte[] fileData = new byte[512];
 
+                    fileIO(1, null);
+
+
+                    int blockNum = 0;
+                    while (true) {
+                        if (blockNum + 1 == fullFileData.length) {
+                            System.out.println("sending block num " + blockNum);
+                            sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
+                            data = new byte[4];
+                            receiving(data);
+                            System.out.println("Connection" + connectionID + " received ACK");
+                            break;
+                        } else {
+                            System.out.println("sending block num " + blockNum);
+                            sending(createDataPacket(3, blockNum, fullFileData[blockNum]));
+                            blockNum++;
+                            data = new byte[4];
+                            receiving(data);
+                            System.out.println("Connection" + connectionID + " received ACK");
+                        }
+                    }
+
+
+                    byte[] endOpCode = new byte[2];// the ending code
+                    endOpCode[0] = (byte) 0;
+                    endOpCode[1] = (byte) 0;
+                    sending(endOpCode);
+                    break;
+
+
+                }
+                data = new byte[516];
+                if(!receiving(data))
+                    break;
 
             }
-            data=new byte[516];
-            receiving(data);
+        }
+        else
+        {
+            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+            data=new byte[5+errorMsg.getBytes().length];
+            data[0]=(byte)0;
+            data[1]=(byte)5;
+            data[2]=(byte)0;
+            data[3]=(byte)errorCode;
+            data[data.length-1]=(byte)0;
+            System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+            sending(data);
+
         }
         System.out.println("Connection"+connectionID+" shuts down");
         sendReceiveSocket.close();
@@ -321,7 +341,7 @@ class Connection extends Thread
 
 
     }
-    private void receiving (byte[] data)
+    private boolean receiving (byte[] data)
     {
 
         receivePacket = new DatagramPacket(data, data.length);
@@ -333,6 +353,23 @@ class Connection extends Thread
             e.printStackTrace();
             System.exit(1);
         }
+        errorCheck();
+        if(errorCode!=8)
+        {
+
+            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+            data=new byte[5+errorMsg.getBytes().length];
+            data[0]=(byte)0;
+            data[1]=(byte)5;
+            data[2]=(byte)0;
+            data[3]=(byte)errorCode;
+            data[data.length-1]=(byte)0;
+            System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+            sending(data);
+            sendReceiveSocket.close();
+            return false;
+        }
+        return true;
         //System.out.println("data receivied");
 
     }
@@ -380,6 +417,102 @@ class Connection extends Thread
             i++;
         }
         fileName = new String(receivePacket.getData(),2,len-2);
-
+        fileNameLen = fileName.length();
     }
+
+    private void errorCheck()
+    {
+        if (receivePacket.getData()[0] != (byte)0)
+        {
+            errorCode = 4;
+            errorMsg = "Error Code 04: The first value of the packet is invalid";
+        }
+        else if(getOpcode() > 5)
+        {
+            errorCode = 4;
+            errorMsg = "Error Code 04: The Opcode is invalid";
+        }
+        else if(getOpcode() == 1 || getOpcode() == 2)
+        {
+            parseData();
+            byte[] fileNameByte = fileName.getBytes();
+            for(int i = 0; i < fileNameLen; i++)
+            {
+                if(fileNameByte[i] > 127 || fileNameByte[i] < 0) {
+                    errorCode = 4;
+                    errorMsg = "Error Code 04: There is an invalid character in the file name";
+                }
+            }
+            if(receivePacket.getData()[2+fileNameLen] != (byte)0)
+            {
+                errorCode = 4;
+                errorMsg = "Error Code 04: The mode of the packet is invalid";
+            }
+            int k =0;
+            int modeLen = 0;
+            while(receivePacket.getData()[3+fileNameLen+k] != (byte)0)
+            {
+                k++;
+                modeLen++;
+            }
+
+            if(modeLen != 8)
+            {
+                errorCode = 4;
+                errorMsg = "Error Code 04: The mode of the packet is invalid";
+            }
+            else
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    if(netascii[j] != receivePacket.getData()[3+fileNameLen+j])
+                    {
+                        errorCode = 4;
+                        errorMsg = "Error Code 04: The mode of the packet is invalid";
+                    }
+                }
+
+                if(receivePacket.getLength() != (4+8+fileNameLen))
+                {
+
+                    errorCode = 4;
+                    errorMsg = "Error Code 04: There is nothing that ends the packet";
+                }
+                else if(receivePacket.getData()[receivePacket.getData().length-1] != (byte)0)
+                {
+                    errorCode = 4;
+                    errorMsg = "Error Code 04: There is an illegal ending to the packet";
+                }
+            }
+        }
+        else if(getOpcode() == 3 || getOpcode() == 4)
+        {
+            int tensDigit,onesDigit;
+            if(blockCount < 10)
+            {
+                tensDigit =0;
+                onesDigit = blockCount;
+            }
+            else
+            {
+                tensDigit = blockCount/10;
+                onesDigit = blockCount%10;
+            }
+
+            if(receivePacket.getData()[2] != tensDigit)
+            {
+                errorCode = 4;
+                errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
+            }
+            if(receivePacket.getData()[3] != onesDigit)
+            {
+                errorCode = 4;
+                errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
+            }
+        }
+    }
+
+
+
+
 }

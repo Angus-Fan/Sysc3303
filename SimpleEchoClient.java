@@ -125,7 +125,7 @@ public class SimpleEchoClient {
                 fileData=trimByteArr(fileData);
 
                 System.out.println("sending block num "+blockNum);
-                sending(createDataPacket(3,blockNum,fileData));
+                sending(createDataPacket(3,blockNum+1,fileData));
 
                 blockNum++;
                 receiving(data1);
@@ -329,7 +329,8 @@ public class SimpleEchoClient {
         //c.sendAndReceive(1);
         //c.sendWriteAndReceive();
 
-        c.sendWriteAndReceive();c.sendReadAndReceive();
+        c.sendWriteAndReceive();
+        //c.sendReadAndReceive();
         //c.sendReceiveSocket.close();
     }
 }

@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class ErrorSimulator {
@@ -12,6 +13,9 @@ public class ErrorSimulator {
     private boolean getServerTip = false;
     private ArrayList<Integer> clientsTID=new ArrayList<Integer>();
     private ArrayList<Integer> serversTID=new ArrayList<Integer>();
+    private static int modified;
+    private int fileNameLen;
+    private String fileName;
     public ErrorSimulator() {
         try {
             sendSocket = new DatagramSocket();
@@ -50,7 +54,7 @@ public class ErrorSimulator {
             serversTID.add(receivePacket.getPort());
             getServerTip=false;
         }
-        else if(data[1]==1||data[1]==2)
+        else if(readOrWrite(data))
         {
             clientsTID.add(receivePacket.getPort());
             getServerTip=true;
@@ -60,7 +64,7 @@ public class ErrorSimulator {
 
         printInfoReceived(receivePacket,data);
         System.out.println();
-        if(data[1]==1||data[1]==2)
+        if(readOrWrite(data))
         {
             System.out.println("from client to server");
             portToSend=serverPort;
@@ -89,7 +93,35 @@ public class ErrorSimulator {
         {
             System.out.println("ERROR: UNKNOWN DESTINATION");
         }
-        sendPacket = new DatagramPacket(data, receivePacket.getLength(),
+
+
+        if(modified!=0)
+        {
+            if(modified==411)
+            {
+                data=badOpCode();
+            }
+            else if(modified==413)
+            {
+                data=badMode();
+            }
+            else if(modified==421)
+            {
+                if(data[1]==(byte)3)
+                {
+                    data=new byte[2];
+                    data=badOpCode();
+                }
+            }
+            else if(modified==422)
+            {
+                if(data[1]==(byte)3)
+                {
+                    data[3]=(byte)9;
+                }
+            }
+        }
+        sendPacket = new DatagramPacket(data, data.length,
                 receivePacket.getAddress(), portToSend);
 
         printInfoToSend(sendPacket);
@@ -110,7 +142,10 @@ public class ErrorSimulator {
         //sendSocket.close();
         //receiveSocket.close();
     }
-
+    private boolean readOrWrite(byte[] data)
+    {
+        return data[1]==(byte)1||data[1]==(byte)2;
+    }
 
 
 
@@ -128,7 +163,11 @@ public class ErrorSimulator {
         int len = getLen(pack);
         // System.out.println("Length: " + len);
         System.out.print("Containing: ");
-        System.out.println(new String(pack.getData(),0,len)); // or could print "s"
+        //System.out.println(new String(pack.getData(),0,len)); // or could print "s"
+        for(int x = 0;x<len;x++) {
+            System.out.print(pack.getData()[x]);
+        }
+        System.out.println("");
     }
     private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
         System.out.println("InterHost: Packet received:");
@@ -152,27 +191,160 @@ public class ErrorSimulator {
 
 
     }
-/*
-  private int flipPort(DatagramPacket pack) {
-    if(pack.getPort()==clientPort) {
-      return 69;
-    }
-    else {
-      return clientPort;
-    }
-  }*/
+
 
     private int getLen(DatagramPacket pack) {
         return pack.getLength();
     }
+    private byte[] badOpCode() {
+        byte[] badOpCodeBytes = new byte[2];
+        badOpCodeBytes[0] = 1;
+        badOpCodeBytes[1] = 1;
+        return badOpCodeBytes;
+
+    }
+    private byte[] badMode() {
+        parseData();
+        byte[] fileNameBytes = fileName.getBytes();
+        byte[] oldInfo = new byte[fileNameLen+2+1+1+8];
+        oldInfo[0] = 0;
+        oldInfo[1] = (byte)getOpcode();
+        for(int i = 0;i<fileNameLen;i++) {
+            oldInfo[i+2] = fileNameBytes[i];
+        }
+        oldInfo[2+fileNameLen] = (byte)0;
+        byte[] nebasciiBytes = "nebascii".getBytes();
+        for(int i = 0;i<nebasciiBytes.length;i++) {
+            oldInfo[i+2+1+fileNameLen] = nebasciiBytes[i];
+        }
+        oldInfo[2+fileNameLen+1+8]=(byte)0;
+        System.out.println(oldInfo);
+        return oldInfo;
+
+
+    }
+    private int getOpcode()
+    {
+        return receivePacket.getData()[1];
+
+    }
+    private void parseData() {
+        int i  = 2;
+        int len = 2;
+        // Figures out how long the filename is
+        while(receivePacket.getData()[i] != (byte)0)
+        {
+            len++;
+            i++;
+        }
+        fileName = new String(receivePacket.getData(),2,len-2);
+        fileNameLen = fileName.length();
+    }
+
+
     public static void main( String args[] )
     {
         ErrorSimulator IH = new ErrorSimulator();
+        System.out.println("Which Error would you like to simulate (4-5) or 0 for no Error : ");
+        Scanner scan = new Scanner(System.in);
+        int choice = scan.nextInt();
+        while(true) {
+            if(choice==4) {
+                System.out.println("ILLEGAL TFTP");
+                System.out.println("Which Error would you like to simulate( [1:RRQ/WWR] [2:DATA] [3:ACK] ) : ");
+                Scanner errorScan = new Scanner(System.in);
+                int errorToSimulate = errorScan.nextInt();
 
+
+                if(errorToSimulate==1) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:OPCODE] [2:FILENAME] [3:MODE] ) : ");
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+
+                    if(partToSimulate==1) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with OP CODE 11");
+                        modified=411;
+                    }
+                    if(partToSimulate==2) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with filename byte>127");
+                    }
+                    if(partToSimulate==3) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with mode failure 'nepascii' " );
+                        modified=413;
+                    }
+                    fieldScanner.close();
+                }
+                else if(errorToSimulate==2) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:OPCODE] [2:DATABLOCK] ) : ");
+
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+                    if(partToSimulate==1) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with OP CODE 11");
+                        modified=421;
+                    }
+                    if(partToSimulate==2) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with wrong block number");
+                        modified=422;
+
+                    }
+
+
+
+                    fieldScanner.close();
+
+                }
+                else if(errorToSimulate==3) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:OPCODE] [2:DATABLOCK] ) : ");
+
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+                    if(partToSimulate==1) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Creating packet with OP CODE 11");
+                        modified=431;
+                    }
+                    if(partToSimulate==2) {
+                        System.out.println("You have chosen to simulate field : " + partToSimulate);
+                        System.out.println("Which block do you want to throw the error in");
+                        Scanner blockScan = new Scanner(System.in);
+                        int blockToFail = blockScan.nextInt();//maybe make this thing
+                        blockScan.close();
+
+                    }
+
+                    fieldScanner.close();
+                }
+                errorScan.close();
+
+                break;
+            }
+            if(choice==5) {
+
+                System.out.println("UNKOWN TID");
+                break;
+            }
+            if(choice==0) {
+                modified=0;
+                break;
+            }
+
+
+        }
+        scan.close();
         while(true) {
             IH.receiveAndSend();
             System.out.println();
         }
+
     }
 
 }
