@@ -8,10 +8,10 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
-public class SimpleEchoClient{
+public class SimpleEchoClient2{
     private byte[] resize = new byte[0];
     private final String path="C:\\Users\\michaelwang3\\Desktop\\";
-    private final String fileName="test.txt";
+    private final String fileName="test2.txt";
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
     private InputStream is = null;
@@ -20,7 +20,7 @@ public class SimpleEchoClient{
     private int blockCount=0;
     private int hostPort=0;
 
-    public SimpleEchoClient()
+    public SimpleEchoClient2()
     {
 
         try {
@@ -41,7 +41,7 @@ public class SimpleEchoClient{
 
 
         System.out.println("Client: sending a packet containing:\n" );
-        constructArray(1,"Test.txt","netascii");
+        constructArray(1,"Test2.txt","netascii");
         sending(msg);
         System.out.println("Client: Packet sent.\n");
 
@@ -77,7 +77,7 @@ public class SimpleEchoClient{
 
             writting(toFile);
 
-            ack(data);
+            ack();
             sending(msg);
             data=new byte[516];
             dataSize=receiving(data);
@@ -118,7 +118,7 @@ public class SimpleEchoClient{
         try {
             is = new FileInputStream((path+fileName));
             System.out.println("Client: sending a packet containing:\n");
-            constructArray(2,"Test.txt","netascii");
+            constructArray(2,"Test2.txt","netascii");
             sending(msg);
 
             System.out.println("Client: Packet sent.\n");
@@ -226,7 +226,7 @@ public class SimpleEchoClient{
         System.arraycopy(data, 0, resize, newData.length, data.length);
         try
         {
-            FileOutputStream out = new FileOutputStream(path+"test.txt");
+            FileOutputStream out = new FileOutputStream(path+"test2.txt");
             out.write(resize);
 
             out.close();
@@ -347,7 +347,7 @@ public class SimpleEchoClient{
         msg = dataGramPackage;
 
     }
-    private void ack(byte []data) {
+    private void ack() {
 
         msg = new byte[4];
         msg[0] = (byte)0;
@@ -414,7 +414,7 @@ public class SimpleEchoClient{
 
     public static void main(String args[])
     {
-        SimpleEchoClient c = new SimpleEchoClient();
+        SimpleEchoClient2 c = new SimpleEchoClient2();
         c.sendWriteAndReceive();
         //c.sendReadAndReceive();
        /* Scanner keyboard = new Scanner(System.in);
