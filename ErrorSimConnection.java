@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.ArrayList;
 
 public class ErrorSimConnection extends Thread{
 
@@ -139,10 +138,7 @@ public class ErrorSimConnection extends Thread{
 
 
     }
-    private boolean readOrWrite(byte[] data)
-    {
-        return data[1]==(byte)1||data[1]==(byte)2;
-    }
+
     private void receive()
     {
         data = new byte[516];

@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class SimpleEchoClient2{
     private byte[] resize = new byte[0];
-    private final String path="C:\\Users\\michaelwang3\\Desktop\\";
+    private final String path="C:\\Users\\aaronvuong\\Desktop\\";
     private final String fileName="test2.txt";
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
@@ -39,7 +39,7 @@ public class SimpleEchoClient2{
     private void sendReadAndReceive()
     {
 
-
+    	hostPort = 0;
         System.out.println("Client: sending a packet containing:\n" );
         constructArray(1,"Test2.txt","netascii");
         sending(msg);
@@ -90,7 +90,7 @@ public class SimpleEchoClient2{
     private void sendWriteAndReceive()
     {
         int numPack=0;    //finding out how many time need to send the whole file
-
+        hostPort = 0;
 
         byte[] fileData  = new byte[512];
         System.out.println("Reading file from: "+(path+fileName));
@@ -388,36 +388,7 @@ public class SimpleEchoClient2{
 
 
     }
-    private void constructArray() {
 
-        msg = new byte[4];
-        msg[0] = (byte)0;
-
-        msg[1] = (byte)3;
-
-        if(blockCount<10)
-        {
-            msg[2] = (byte)0;
-            msg[3] =(byte)blockCount;
-        }
-        else
-        {
-            msg[2] = (byte)(int)(blockCount%10);
-            msg[3] =(byte)blockCount;
-        }
-
-
-
-        byte[] dataGramPackage = new byte[4];
-        dataGramPackage[0] = msg[0];
-        dataGramPackage[1] = msg[1];
-        dataGramPackage[2] = msg[2];
-        dataGramPackage[3] = msg[3];
-
-        msg = dataGramPackage;
-
-
-    }
     private void close()
     {
         sendReceiveSocket.close();
@@ -426,21 +397,17 @@ public class SimpleEchoClient2{
     public static void main(String args[])
     {
         SimpleEchoClient2 c = new SimpleEchoClient2();
-        c.sendWriteAndReceive();
+        //c.sendWriteAndReceive();
         //c.sendReadAndReceive();
-       /* Scanner keyboard = new Scanner(System.in);
-        while(true)
+        Scanner keyboard = new Scanner(System.in);
+        System.out.println("Type 1 to close the client or 0 to continue");
+        if(keyboard.nextInt() != 1)
         {
-            //c.sendAndReceive(1);
-            //c.sendWriteAndReceive();
-            c.sendReadAndReceive();
-            //c.sendReceiveSocket.close();
-            System.out.println("Type 1 to close the client or 0 to continue");
-            if(keyboard.nextInt() == 1)
-                break;
+             c.sendWriteAndReceive();
+             c.sendReadAndReceive();
         }
         keyboard.close();
-        c.close();*/
+        c.close(); //This is shutdown
     }
 
 }

@@ -6,7 +6,7 @@ class Connection extends Thread
 {
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
-    private final String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
+    private final String path="C:\\Users\\aaronvuong\\Desktop\\server\\";
     private InputStream is = null;
     private OutputStream os = null;
     private String fileName="";

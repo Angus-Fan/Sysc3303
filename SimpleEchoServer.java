@@ -86,13 +86,13 @@ public class SimpleEchoServer {
         SimpleEchoServer c = new SimpleEchoServer();
         Scanner keyboard = new Scanner(System.in);
         while(true) {
-            c.receiveAndEcho();
-           /* System.out.println("Type 1 to close the server or 0 to continue");
+        	System.out.println("Type 1 to close the server or 0 to continue");
             if(keyboard.nextInt() == 1)
-                break;*/
+                break;
+            c.receiveAndEcho();  
         }
-        /*keyboard.close();
-        c.close();*/
+        keyboard.close();
+        c.close(); // This is shutdown 
     }
 
 }

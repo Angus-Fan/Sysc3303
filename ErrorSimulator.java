@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 
@@ -110,8 +109,6 @@ public class ErrorSimulator{
                     }
                     if(partToSimulate==2) {
                         System.out.println("You have chosen to simulate field : " + partToSimulate);
-                        System.out.println("Which block do you want to throw the error in");
-                        Scanner blockScan = new Scanner(System.in);
                         modified=432;
 
                     }
