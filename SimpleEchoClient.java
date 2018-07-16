@@ -118,7 +118,7 @@ public class SimpleEchoClient{
         try {
             is = new FileInputStream((path+fileName));
             System.out.println("Client: sending a packet containing:\n");
-            constructArray(2,"Test.txt","netascii");
+            constructArray(2,"Test2.txt","netascii");
             sending(msg);
 
             System.out.println("Client: Packet sent.\n");
@@ -126,15 +126,18 @@ public class SimpleEchoClient{
 
             byte data1[] = new byte[516];
             receiving(data1);
-
+            if(data1[1]==(byte)5) {
+                System.out.println(new String(data1, 4, parseData()));
+                if(data1[3]==(byte)4)
+                {
+                    System.out.println("End with the WRQ ");
+                    return;
+                }
+            }
             int blockNum=0;
             while(blockNum!=numPack)
             {
-                if(data1[1]==(byte)5) {
-                    System.out.println(new String(data1, 4, parseData()));
-                    if(data1[3]==(byte)4)
-                        break;
-                }
+
 
 
 
@@ -147,6 +150,14 @@ public class SimpleEchoClient{
 
                 blockNum++;
                 receiving(data1);
+                if(data1[1]==(byte)5) {
+                    System.out.println(new String(data1, 4, parseData()));
+                    if(data1[3]==(byte)4)
+                    {
+                        System.out.println("End with the WRQ ");
+                        return;
+                    }
+                }
             }
             is.close();
         }
@@ -415,7 +426,7 @@ public class SimpleEchoClient{
     public static void main(String args[])
     {
         SimpleEchoClient c = new SimpleEchoClient();
-        c.sendWriteAndReceive();
+        c.sendReadAndReceive();
         //c.sendReadAndReceive();
        /* Scanner keyboard = new Scanner(System.in);
         while(true)

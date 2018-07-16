@@ -49,8 +49,6 @@ public class ErrorSimConnection extends Thread{
 
 
         while(true) {
-            if(data[1]==(byte)0)
-                break;
 
             if(flip)
             {
@@ -78,8 +76,9 @@ public class ErrorSimConnection extends Thread{
             else
             {
                 if (modified == 412) {
-                data = badMode();
-                System.out.println("WE WENT INTO 412");
+                       data = badMode();
+                      System.out.println("WE WENT INTO 412");
+                        modified=0;
                 }
             }
 
@@ -125,7 +124,10 @@ public class ErrorSimConnection extends Thread{
                 }
             }
             System.out.println("InterHost: packet sent");
+            if(data[1]==(byte)0) {
 
+                break;
+            }
 
             receive();
             if(serversTID==0)

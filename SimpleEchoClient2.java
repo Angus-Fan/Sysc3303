@@ -126,15 +126,18 @@ public class SimpleEchoClient2{
 
             byte data1[] = new byte[516];
             receiving(data1);
-
+            if(data1[1]==(byte)5) {
+                System.out.println(new String(data1, 4, parseData()));
+                if(data1[3]==(byte)4)
+                {
+                    System.out.println("End with the WRQ ");
+                    return;
+                }
+            }
             int blockNum=0;
             while(blockNum!=numPack)
             {
-                if(data1[1]==(byte)5) {
-                    System.out.println(new String(data1, 4, parseData()));
-                    if(data1[3]==(byte)4)
-                        break;
-                }
+
 
 
 
@@ -147,6 +150,14 @@ public class SimpleEchoClient2{
 
                 blockNum++;
                 receiving(data1);
+                if(data1[1]==(byte)5) {
+                    System.out.println(new String(data1, 4, parseData()));
+                    if(data1[3]==(byte)4)
+                    {
+                        System.out.println("End with the WRQ ");
+                        return;
+                    }
+                }
             }
             is.close();
         }
