@@ -6,7 +6,8 @@ class Connection extends Thread
 {
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
-    private final String path="C:\\Users\\aaronvuong\\Desktop\\server\\";
+    //private final String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
+    private final String path="E:\\";
     private InputStream is = null;
     private OutputStream os = null;
     private String fileName="";
@@ -21,6 +22,7 @@ class Connection extends Thread
     private byte[] netascii = "netascii".getBytes();
     private int errorSimulatorPort=0;
     private String errorMsg;
+
     private int hostPort=0;
     public Connection(DatagramPacket packet, int connectionID)
     {
@@ -68,6 +70,10 @@ class Connection extends Thread
                         toFile[i] = data[i + 4];
                     toFile = trimByteArr(toFile);
                     fileIO(2, toFile);
+                    if(errorCode!=8) {
+                        System.out.println("Connection" + connectionID + " shuts down");
+                        return;
+                    }
                     constructArray();
 
                             blockCount++;
@@ -86,7 +92,10 @@ class Connection extends Thread
                     byte[] fileData = new byte[512];
 
                     fileIO(1, null);
-
+                    if(errorCode!=8) {
+                        System.out.println("Connection" + connectionID + " shuts down");
+                        return;
+                    }
 
                     int blockNum = 1;
                     boolean toBreak=true;
@@ -183,17 +192,23 @@ class Connection extends Thread
                 fullFileData[numPack-1]=fileData;
                 is.close();
 
-            } catch (Exception e) {
+            }
+            catch (FileNotFoundException e)
+            {
+                if(e.toString().substring(e.toString().length()-42).compareTo("The system cannot find the file specified)")==0)
+                {
+                    System.out.println("ERROR:File not found!");
+                }
+                else
+                {
+                    e.printStackTrace();
+
+                }
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
-            /*System.out.println("fullfiledata---------------------------------");
-            for(int i =0;i<fullFileData.length;i++)
-            {
-                String str=new String(fullFileData[i],0,fullFileData[i].length);
-                System.out.println(str);
 
-            }
-            System.out.println("fullfiledata---------------------------------");*/
         }
         else
         {
@@ -272,6 +287,51 @@ class Connection extends Thread
             out.write(data);
 
             out.close();
+        }
+        catch (FileNotFoundException e)
+        {
+            if(e.toString().substring(e.toString().length()-17).compareTo("Access is denied)")==0)
+            {
+                System.out.println("ERROR:Access is denied!!");
+                errorMsg="ERROR:Access is denied!!";
+                System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                data=new byte[5+errorMsg.getBytes().length];
+                data[0]=(byte)0;
+                data[1]=(byte)5;
+                data[2]=(byte)0;
+                data[3]=(byte)2;
+                data[data.length-1]=(byte)0;
+                System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+                sending(data);
+                errorCode=10;
+            }
+            else
+            {
+                e.printStackTrace();
+
+            }
+        }
+        catch(IOException e) {
+            if(e.toString().substring(e.toString().length()-37).compareTo("There is not enough space on the disk")==0)
+            {
+                System.out.println("ERROR: There is not enough space on the disk");
+                errorMsg="ERROR:There is not enough space on the disk";
+                System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                data=new byte[5+errorMsg.getBytes().length];
+                data[0]=(byte)0;
+                data[1]=(byte)5;
+                data[2]=(byte)0;
+                data[3]=(byte)3;
+                data[data.length-1]=(byte)0;
+                System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+                sending(data);
+                errorCode=11;
+            }
+            else
+            {
+                e.printStackTrace();
+
+            }
         }
         catch(Exception e) {
 
