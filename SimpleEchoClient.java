@@ -10,8 +10,9 @@ import java.util.Scanner;
 
 public class SimpleEchoClient{
     private byte[] resize = new byte[0];
-    private final String path="C:\\Users\\michaelwang3\\Desktop\\";
-    private final String fileName="test.txt";
+    private  String path="C:\\Users\\michaelwang3\\Desktop\\";
+    //private final String path="E:\\";
+    private  String fileName="test.txt";
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
     private InputStream is = null;
@@ -38,10 +39,11 @@ public class SimpleEchoClient{
 
     private void sendReadAndReceive()
     {
-
+        if(!checkAccess())
+            return;
     	hostPort = 0;
         System.out.println("Client: sending a packet containing:\n" );
-        constructArray(1,"Test.txt","netascii");
+        constructArray(1,fileName,"netascii");
         sending(msg);
         System.out.println("Client: Packet sent.\n");
 
@@ -75,8 +77,7 @@ public class SimpleEchoClient{
             }
             blockCount++;
 
-            writting(toFile);
-            if(isError)
+            if(!writting(toFile))
                 return;
             ack(data);
             sending(msg);
@@ -111,7 +112,7 @@ public class SimpleEchoClient{
 
             is = new FileInputStream((path+fileName));
             System.out.println("Client: sending a packet containing:\n");
-            constructArray(2,"Test2.txt","netascii");
+            constructArray(2,fileName,"netascii");
             sending(msg);
 
             System.out.println("Client: Packet sent.\n");
@@ -155,6 +156,10 @@ public class SimpleEchoClient{
                 }
             }
             is.close();
+            msg =new byte[2];
+            msg[0]=(byte)0;
+            msg[1]=(byte)0;
+            sending(msg);
         }
         catch (FileNotFoundException e)
         {
@@ -173,10 +178,7 @@ public class SimpleEchoClient{
             // if any I/O error occurs
             e.printStackTrace();
         }
-        msg =new byte[2];
-        msg[0]=(byte)0;
-        msg[1]=(byte)0;
-        sending(msg);
+
         System.out.println("End with the WRQ ");
     }
 
@@ -234,8 +236,51 @@ public class SimpleEchoClient{
         }
         printInfoToSend(sendPacket);
     }
+    private boolean checkAccess()
+    {
+            try
+            {
+                FileOutputStream out = new FileOutputStream(path+fileName);
+                out.write((byte)1);
 
-    private void writting(byte[] data)
+                out.close();
+            }
+            catch (FileNotFoundException e)
+            {
+                if(e.toString().substring(e.toString().length()-17).compareTo("Access is denied)")==0)
+                {
+                    System.out.println("ERROR:Access is denied!!");
+                    return false;
+                }
+                else
+                {
+                    e.printStackTrace();
+
+                }
+            }
+            catch(IOException e) {
+                if(e.toString().substring(e.toString().length()-37).compareTo("There is not enough space on the disk")==0)
+                {
+                    System.out.println("ERROR: There is not enough space on the disk");
+                    return false;
+                }
+                else
+                {
+                    e.printStackTrace();
+
+                }
+            }
+            catch(Exception e) {
+
+                // if any I/O error occurs
+                e.printStackTrace();
+            }
+            return true;
+
+
+    }
+
+    private boolean writting(byte[] data)
     {
         System.out.println("data len="+data.length);
         byte[] newData = resize;
@@ -244,7 +289,7 @@ public class SimpleEchoClient{
         System.arraycopy(data, 0, resize, newData.length, data.length);
         try
         {
-            FileOutputStream out = new FileOutputStream(path+"test.txt");
+            FileOutputStream out = new FileOutputStream(path+fileName);
             out.write(resize);
 
             out.close();
@@ -255,6 +300,7 @@ public class SimpleEchoClient{
             {
                 System.out.println("ERROR:Access is denied!!");
                 isError=true;
+                return false;
             }
             else
             {
@@ -267,6 +313,8 @@ public class SimpleEchoClient{
             {
                 System.out.println("ERROR: There is not enough space on the disk");
                 isError=true;
+                return false;
+
             }
             else
             {
@@ -279,7 +327,7 @@ public class SimpleEchoClient{
             // if any I/O error occurs
             e.printStackTrace();
         }
-
+        return true;
 
 
     }
@@ -421,7 +469,25 @@ public class SimpleEchoClient{
 
 
     }
+    private void readFilePath(Scanner scan) {
 
+        System.out.println("Please enter the path to the file: ");
+        path = scan.nextLine();
+        System.out.println("The file path is : " + path);
+
+
+
+    }
+    private void readFileName(Scanner scan) {
+
+        System.out.println("Please enter the name of the file: ");
+        fileName = "\\"+scan.nextLine();
+        System.out.println("The file name is : " + fileName);
+
+
+
+
+    }
     private void close()
     {
         sendReceiveSocket.close();
@@ -430,19 +496,37 @@ public class SimpleEchoClient{
     public static void main(String args[])
     {
         SimpleEchoClient c = new SimpleEchoClient();
+        Scanner scannerPath = new Scanner(System.in);
+        c.readFilePath(scannerPath);
+        Scanner scannerFileName = new Scanner(System.in);
+        c.readFileName(scannerFileName);
+        //    c.readFileName();
+
+
+
+
         //c.sendReadAndReceive();
         //c.sendReadAndReceive();
 
-       Scanner keyboard = new Scanner(System.in);
-       System.out.println("Type 1 to close the client or 0 to continue");
+        Scanner keyboard = new Scanner(System.in);
+        System.out.println("Type 1 to close the client, 2 to read or 3 to write");
 
+        int temp=keyboard.nextInt();
+        if(temp== 2)
+        {
 
-       if(keyboard.nextInt() != 1)
-       {
+            c.sendReadAndReceive();
+        }
+        else if(temp==3)
+        {
             c.sendWriteAndReceive();
-            //c.sendReadAndReceive();
-       }
+        }
+
+
+        scannerPath.close();
+        scannerFileName.close();
         keyboard.close();
+
         c.close(); //This is shutdown
     }
 

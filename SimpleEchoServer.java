@@ -14,7 +14,7 @@ public class SimpleEchoServer {
     private DatagramPacket receivePacket;
     private DatagramSocket  receiveSocket;
     private int connectionCount=0;
-
+    private  String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
 
 
     public SimpleEchoServer()
@@ -73,10 +73,20 @@ public class SimpleEchoServer {
         System.out.println(received + "\n");
 
 
-        Connection connection=new Connection(receivePacket,connectionCount++);
+        Connection connection=new Connection(receivePacket,connectionCount++,path);
         connection.start();
 
     }
+    private void readFilePath(Scanner scan) {
+
+        System.out.println("Please enter the path to the file: ");
+        path = scan.nextLine();
+        System.out.println("The file path is : " + path);
+
+
+
+    }
+
     private void close()
     {
         receiveSocket.close();
@@ -85,6 +95,7 @@ public class SimpleEchoServer {
     {
         SimpleEchoServer c = new SimpleEchoServer();
         Scanner keyboard = new Scanner(System.in);
+        c.readFilePath(keyboard);
         while(true) {
         	System.out.println("Type 1 to close the server or 0 to continue");
             if(keyboard.nextInt() == 1)

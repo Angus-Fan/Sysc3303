@@ -6,8 +6,8 @@ class Connection extends Thread
 {
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket sendReceiveSocket;
-    //private final String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
-    private final String path="E:\\";
+    private  String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
+    //private final String path="E:\\";
     private InputStream is = null;
     private OutputStream os = null;
     private String fileName="";
@@ -24,11 +24,12 @@ class Connection extends Thread
     private String errorMsg;
 
     private int hostPort=0;
-    public Connection(DatagramPacket packet, int connectionID)
+    public Connection(DatagramPacket packet, int connectionID,String path)
     {
         System.out.println("Connection"+connectionID+" been created!");
         this.connectionID=connectionID;
         this.hostPort=packet.getPort();
+        this.path=path;
 
         receivePacket=packet;
         try {
@@ -197,7 +198,20 @@ class Connection extends Thread
             {
                 if(e.toString().substring(e.toString().length()-42).compareTo("The system cannot find the file specified)")==0)
                 {
-                    System.out.println("ERROR:File not found!");
+                    //System.out.println("ERROR:File not found!");
+                    errorMsg="ERROR:File not found!";
+                    System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                    errorCode=1;
+                    data=new byte[5+errorMsg.getBytes().length];
+                    data[0]=(byte)0;
+                    data[1]=(byte)5;
+                    data[2]=(byte)0;
+                    data[3]=(byte)errorCode;
+                    data[data.length-1]=(byte)0;
+                    System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+                    sending(data);
+
+
                 }
                 else
                 {
@@ -292,7 +306,7 @@ class Connection extends Thread
         {
             if(e.toString().substring(e.toString().length()-17).compareTo("Access is denied)")==0)
             {
-                System.out.println("ERROR:Access is denied!!");
+                //System.out.println("ERROR:Access is denied!!");
                 errorMsg="ERROR:Access is denied!!";
                 System.out.println("Connection" + connectionID + " gets an "+errorMsg);
                 data=new byte[5+errorMsg.getBytes().length];
@@ -314,7 +328,7 @@ class Connection extends Thread
         catch(IOException e) {
             if(e.toString().substring(e.toString().length()-37).compareTo("There is not enough space on the disk")==0)
             {
-                System.out.println("ERROR: There is not enough space on the disk");
+                //System.out.println("ERROR: There is not enough space on the disk");
                 errorMsg="ERROR:There is not enough space on the disk";
                 System.out.println("Connection" + connectionID + " gets an "+errorMsg);
                 data=new byte[5+errorMsg.getBytes().length];
