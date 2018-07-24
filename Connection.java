@@ -64,7 +64,14 @@ class Connection extends Thread
 
                     break;
                 }
-                if (getOpcode() == 3) {
+                else if (getOpcode() == 5) {
+                    System.out.println("Connection" + connectionID + " gets an error from client");
+                    System.out.println(new String(data).substring(4,data.length-1));
+                    System.out.println("Connection"+connectionID+" shuts down");
+                    sendReceiveSocket.close();
+                    return;
+                }
+                else if (getOpcode() == 3) {
                     System.out.println("Connection" + connectionID + " received data package");
                     byte[] toFile = new byte[data.length - 4];
                     for (int i = 0; i < data.length - 4; i++)
@@ -112,8 +119,18 @@ class Connection extends Thread
                                 sendReceiveSocket.close();
                                 break;
                             }
-                            System.out.println("Connection" + connectionID + " received ACK");
-                            break;
+                            if(data[1]==(byte)5)
+                            {
+                                System.out.println("Connection" + connectionID + " gets an error from client");
+                                System.out.println(new String(data).substring(4,data.length-1));
+                                System.out.println("Connection"+connectionID+" shuts down");
+                                sendReceiveSocket.close();
+                                return;
+                            }
+                            else {
+                                System.out.println("Connection" + connectionID + " received ACK");
+                                break;
+                            }
                         } else {
                             System.out.println("sending block num " + blockNum);
                             sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]));
@@ -129,7 +146,15 @@ class Connection extends Thread
                                 sendReceiveSocket.close();
                                 break;
                             }
-                            System.out.println("Connection" + connectionID + " received ACK");
+                            if(data[1]==(byte)5)
+                            {
+                                System.out.println("Connection" + connectionID + " gets an error from client");
+                                System.out.println("Connection"+connectionID+" shuts down");
+                                sendReceiveSocket.close();
+                                return;
+                            }
+                            else
+                                System.out.println("Connection" + connectionID + " received ACK");
                         }
                     }
                     if(!toBreak)

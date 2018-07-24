@@ -313,6 +313,18 @@ public class SimpleEchoClient{
             {
                 System.out.println("ERROR: There is not enough space on the disk");
                 isError=true;
+                String errorMsg="ERROR: There is not enough space on the disk";
+                byte [] data1=new byte[5+errorMsg.getBytes().length];
+                data1[0]=(byte)0;
+                data1[1]=(byte)5;
+                data1[2]=(byte)0;
+                data1[3]=(byte)3;
+                data1[data1.length-1]=(byte)0;
+                System.arraycopy(errorMsg.getBytes(),0,data1,4,errorMsg.getBytes().length);
+                sending(data1);
+
+
+
                 return false;
 
             }
