@@ -22,8 +22,10 @@ class Connection extends Thread
     private byte[] netascii = "netascii".getBytes();
     private int errorSimulatorPort=0;
     private String errorMsg;
-
+    private byte[] previousPacket = new byte[4];
+    private boolean dupPacket = false;
     private int hostPort=0;
+    private boolean duplicateRQ=false;
     public Connection(DatagramPacket packet, int connectionID,String path)
     {
         System.out.println("Connection"+connectionID+" been created!");
@@ -58,11 +60,20 @@ class Connection extends Thread
         if(errorSimulatorPort==0)
             errorSimulatorPort=receivePacket.getPort();
         errorCheck();
+        if(!dupPacket)
+            storeOpcode();
         if(errorCode==8) {
             while (true) {
-                if (getOpcode() == 0) {
+                if (getOpcode() == 0 ) {
 
                     break;
+                }
+                else if( dupPacket)
+                {
+                    System.out.println("duplicate package!!");
+                    if(!receiving(data))
+                        break;
+                    continue;
                 }
                 else if (getOpcode() == 5) {
                     System.out.println("Connection" + connectionID + " gets an error from client");
@@ -72,7 +83,7 @@ class Connection extends Thread
                     return;
                 }
                 else if (getOpcode() == 3) {
-                    System.out.println("Connection" + connectionID + " received data package");
+                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]);
                     byte[] toFile = new byte[data.length - 4];
                     for (int i = 0; i < data.length - 4; i++)
                         toFile[i] = data[i + 4];
@@ -84,20 +95,22 @@ class Connection extends Thread
                     }
                     constructArray();
 
-                            blockCount++;
+                    blockCount++;
                     sending(msg);
                 } else if (getOpcode() == 2)    //Writing request
                 {
-                    System.out.println("Connection" + connectionID + " received writing request");
+                    System.out.println("Connection" + connectionID + " received write request");
+                    duplicateRQ=true;
                     blockCount = 1;
                     constructArray();
                     sending(msg);
                 } else if (getOpcode() == 1)   //Reading request
                 {
-                    int numPack;    //finding out how many time need to send the whole file
+                    //int numPack;    //finding out how many time need to send the whole file
+                    System.out.println("Connection" + connectionID + " received read request");
+                    duplicateRQ=true;
 
-
-                    byte[] fileData = new byte[512];
+                    //byte[] fileData = new byte[512];
 
                     fileIO(1, null);
                     if(errorCode!=8) {
@@ -108,11 +121,19 @@ class Connection extends Thread
                     int blockNum = 1;
                     boolean toBreak=true;
                     while (true) {
+                        if( dupPacket)
+                        {
+                            System.out.println("duplicate package!!");
+                            if(!receiving(data))
+                                break;
+                            continue;
+                        }
                         if (blockNum  == fullFileData.length) {
                             System.out.println("sending block num " + blockNum);
                             sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
                             data = new byte[4];
                             toBreak=receiving(data);
+
                             if(!toBreak)
                             {
                                 System.out.println("Connection" + connectionID + " shuts down");
@@ -138,6 +159,16 @@ class Connection extends Thread
                             data = new byte[4];
                             System.out.println("blockCount= "+blockCount);
                             toBreak=receiving(data);
+
+
+                            while(dupPacket)
+                            {
+                                System.out.println("duplicate package!!");
+                                if(!receiving(data))
+                                    break;
+
+                            }
+
                             blockNum++;
                             blockCount=blockNum;
                             if(!toBreak)
@@ -396,11 +427,19 @@ class Connection extends Thread
         {
             System.out.println("Connection" + connectionID + " gets an UNKNOWN TID "+receivePacket.getPort());
         }
+        if((data[1]==1||data[1]==2)&&duplicateRQ)
+        {
+            System.out.println("Connection" + connectionID + " gets a duplicate request");
+
+            return receiving(data);
+        }
         errorCheck();
+        if(!dupPacket)
+            storeOpcode();
         if(errorCode!=8)
         {
 
-            System.out.println("Connection1" + connectionID + " gets an "+errorMsg);
+            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
             data=new byte[5+errorMsg.getBytes().length];
             data[0]=(byte)0;
             data[1]=(byte)5;
@@ -477,82 +516,94 @@ class Connection extends Thread
         }
         else if(getOpcode() == 1 || getOpcode() == 2)
         {
-            parseData();
-            byte[] fileNameByte = fileName.getBytes();
-            for(int i = 0; i < fileNameLen; i++)
-            {
-                if(fileNameByte[i] > 127 || fileNameByte[i] < 0) {
-                    errorCode = 4;
-                    errorMsg = "Error Code 04: There is an invalid character in the file name";
-                }
-            }
-            if(receivePacket.getData()[2+fileNameLen] != (byte)0)
-            {
-                errorCode = 4;
-                errorMsg = "Error Code 04: The mode of the packet is invalid";
-            }
-            int k =0;
-            int modeLen = 0;
-            while(receivePacket.getData()[3+fileNameLen+k] != (byte)0)
-            {
-                k++;
-                modeLen++;
-            }
-
-            if(modeLen != 8)
-            {
-                errorCode = 4;
-                errorMsg = "Error Code 04: The mode of the packet is invalid";
-            }
-            else
-            {
-                for (int j = 0; j < 8; j++)
-                {
-                    if(netascii[j] != receivePacket.getData()[3+fileNameLen+j])
-                    {
+            checkDup();
+            if(!dupPacket) {
+                parseData();
+                byte[] fileNameByte = fileName.getBytes();
+                for (int i = 0; i < fileNameLen; i++) {
+                    if (fileNameByte[i] > 127 || fileNameByte[i] < 0) {
                         errorCode = 4;
-                        errorMsg = "Error Code 04: The mode of the packet is invalid";
+                        errorMsg = "Error Code 04: There is an invalid character in the file name";
                     }
                 }
-
-                if(receivePacket.getLength() != (4+8+fileNameLen))
-                {
-
+                if (receivePacket.getData()[2 + fileNameLen] != (byte) 0) {
                     errorCode = 4;
-                    errorMsg = "Error Code 04: There is nothing that ends the packet";
+                    errorMsg = "Error Code 04: The mode of the packet is invalid";
                 }
-                else if(receivePacket.getData()[receivePacket.getData().length-1] != (byte)0)
-                {
+                int k = 0;
+                int modeLen = 0;
+                while (receivePacket.getData()[3 + fileNameLen + k] != (byte) 0) {
+                    k++;
+                    modeLen++;
+                }
+
+                if (modeLen != 8) {
                     errorCode = 4;
-                    errorMsg = "Error Code 04: There is an illegal ending to the packet";
+                    errorMsg = "Error Code 04: The mode of the packet is invalid";
+                } else {
+                    for (int j = 0; j < 8; j++) {
+                        if (netascii[j] != receivePacket.getData()[3 + fileNameLen + j]) {
+                            errorCode = 4;
+                            errorMsg = "Error Code 04: The mode of the packet is invalid";
+                        }
+                    }
+
+                    if (receivePacket.getLength() != (4 + 8 + fileNameLen)) {
+
+                        errorCode = 4;
+                        errorMsg = "Error Code 04: There is nothing that ends the packet";
+                    } else if (receivePacket.getData()[receivePacket.getData().length - 1] != (byte) 0) {
+                        errorCode = 4;
+                        errorMsg = "Error Code 04: There is an illegal ending to the packet";
+                    }
                 }
             }
         }
-        else if(getOpcode() == 3 || getOpcode() == 4)
+        else if(getOpcode() == 3 || getOpcode() == 4) {
+            checkDup();
+            if (!dupPacket) {
+                int tensDigit, onesDigit;
+                if (blockCount < 10) {
+                    tensDigit = 0;
+                    onesDigit = blockCount;
+                } else {
+                    tensDigit = blockCount / 10;
+                    onesDigit = blockCount % 10;
+                }
+
+                if (receivePacket.getData()[2] != tensDigit) {
+                    errorCode = 4;
+                    errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
+                }
+                if (receivePacket.getData()[3] != onesDigit) {
+                    errorCode = 4;
+                    errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
+                }
+            }
+        }
+    }
+    private void storeOpcode()
+    {
+        for (int i = 0; i<4; i++)
+            previousPacket[i] = receivePacket.getData()[i];
+    }
+
+    private void checkDup()
+    {
+
+        int four = 0;
+        for (int i = 0; i<4; i++)
         {
-            int tensDigit,onesDigit;
-            if(blockCount < 10)
-            {
-                tensDigit =0;
-                onesDigit = blockCount;
-            }
-            else
-            {
-                tensDigit = blockCount/10;
-                onesDigit = blockCount%10;
-            }
 
-            if(receivePacket.getData()[2] != tensDigit)
-            {
-                errorCode = 4;
-                errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
-            }
-            if(receivePacket.getData()[3] != onesDigit)
-            {
-                errorCode = 4;
-                errorMsg = "Error Code 04: The data block that was sent is not the subsequent one from the previous data block";
-            }
+            if(previousPacket[i] == receivePacket.getData()[i])
+                four++;
         }
+        if(four == 4) {
+
+            dupPacket = true;
+        }
+        else
+            dupPacket = false;
     }
 
 

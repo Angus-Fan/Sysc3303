@@ -7,6 +7,8 @@ public class ErrorSimulator{
     public int modified=0;
     private DatagramPacket receivePacket;
     private DatagramSocket receiveSocket;
+    private int modifiedPackIndex=0;
+    private int delayAmount=0;
     public ErrorSimulator() {
         try {
             receiveSocket = new DatagramSocket(23);
@@ -33,11 +35,12 @@ public class ErrorSimulator{
             System.exit(1);
         }
 
-        ErrorSimConnection errorSimulator=new ErrorSimConnection(receivePacket,modified);
+        ErrorSimConnection errorSimulator=new ErrorSimConnection(receivePacket,modified,modifiedPackIndex,delayAmount);
         errorSimulator.start();
 
 
     }
+
     private void userInput()
     {
         System.out.println("Which Error would you like to simulate (4-5) or 0 for no Error : ");
@@ -128,6 +131,154 @@ public class ErrorSimulator{
             if(choice==0) {
                 modified=0;
                 break;
+            }
+            if(choice==6) {
+
+                System.out.println("Which Error would you like to simulate( [1:Lose a packet] [2:Delay a packet] [3:Duplicate a packet] ) : ");
+                Scanner errorScan = new Scanner(System.in);
+                int errorToSimulate = errorScan.nextInt();
+                if(errorToSimulate==1) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:RRQ/WRQ] [2:ACK] [3:DATA] ) : ");
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+                    if(partToSimulate==1) {
+
+
+                         modifiedPackIndex =0;
+                        modified=611;
+
+
+
+                    }
+
+                    if(partToSimulate==2) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=613;
+                        blockNumScanner.close();
+
+
+                    }
+                    if(partToSimulate==3) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=612;
+
+                        blockNumScanner.close();
+
+                    }
+
+                    fieldScanner.close();
+
+
+                }
+                if(errorToSimulate==2) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:RRQ/WRQ] [2:ACK] [3:DATA] ) : ");
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+                    if(partToSimulate==1) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+                        modified=621;
+                        modifiedPackIndex = blockNumScanner.nextInt();
+
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+
+                    }
+
+                    if(partToSimulate==2) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=623;
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+
+                    }
+                    if(partToSimulate==3) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=622;
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+                    }
+
+                    fieldScanner.close();
+
+
+                }
+                if(errorToSimulate==3) {
+                    System.out.println("You have chosen to simulate error : " + errorToSimulate);
+                    System.out.println("Which field would you like to change( [1:RRQ/WRQ] [2:ACK] [3:DATA] ) : ");
+                    Scanner fieldScanner = new Scanner(System.in);
+                    int partToSimulate = fieldScanner.nextInt();
+                    if(partToSimulate==1) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=631;
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+
+                    }
+
+                    if(partToSimulate==2) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=633;
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+
+                    }
+                    if(partToSimulate==3) {
+                        System.out.println("Which block do you want the error to occur in ");
+                        Scanner blockNumScanner = new Scanner(System.in);
+
+                         modifiedPackIndex = blockNumScanner.nextInt();
+                        modified=632;
+                        System.out.println("How long do you want to delay for ");
+                        Scanner delayScanner = new Scanner(System.in);
+                         delayAmount = delayScanner.nextInt();
+                        blockNumScanner.close();
+                        delayScanner.close();
+                    }
+
+                    fieldScanner.close();
+
+
+                }
+                errorScan.close();
+
+                break;
+
             }
         }
         scan.close();

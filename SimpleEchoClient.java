@@ -21,6 +21,9 @@ public class SimpleEchoClient{
     private int blockCount=0;
     private int hostPort=0;
     private boolean isError=false;
+    private int timeout=3000;
+    private int maxAttempt=5;
+    private int curtAttempt=0;
     public SimpleEchoClient()
     {
 
@@ -29,6 +32,7 @@ public class SimpleEchoClient{
             // port on the local host machine. This socket will be used to
             // send and receive UDP Datagram packets.
             sendReceiveSocket = new DatagramSocket();
+
 
         } catch (SocketException se) {   // Can't create the socket.
             se.printStackTrace();
@@ -49,9 +53,20 @@ public class SimpleEchoClient{
 
         byte data[] = new byte[516];
 
-
-
-        int dataSize=receiving(data);
+        int dataSize= receiving(data);
+        curtAttempt=0;
+        while(dataSize==-1)
+        {
+            if(curtAttempt>=maxAttempt)
+            {
+                System.out.println("Connection lost, client shuts down");
+                close();
+                return;
+            }
+            curtAttempt++;
+            System.out.println("Resending the request");
+            dataSize= receiving(data);
+        }
 
         while(receivePacket.getData()[1]!=(byte)0)
         {
@@ -82,7 +97,9 @@ public class SimpleEchoClient{
             ack(data);
             sending(msg);
             data=new byte[516];
+
             dataSize=receiving(data);
+
         }
         System.out.println("End with the RRQ ");
 
@@ -119,7 +136,25 @@ public class SimpleEchoClient{
 
 
             byte data1[] = new byte[516];
-            receiving(data1);
+
+
+            int temp=receiving(data1);
+            curtAttempt=0;
+            while(temp==-1)
+            {
+                if(curtAttempt>=maxAttempt)
+                {
+                    System.out.println("Connection lost, client shuts down");
+                    close();
+                    return;
+                }
+                curtAttempt++;
+                System.out.println("Resending the request");
+                temp= receiving(data1);
+            }
+
+
+
             if(data1[1]==(byte)5) {
                 System.out.println(new String(data1, 4, parseData()));
                 if(data1[3]==(byte)4)
@@ -362,9 +397,14 @@ public class SimpleEchoClient{
         receivePacket = new DatagramPacket(data1, data1.length);
 
         try {
-
+            sendReceiveSocket.setSoTimeout(timeout);
             sendReceiveSocket.receive(receivePacket);
-        } catch(IOException e) {
+        }
+        catch(SocketTimeoutException e) {
+            System.out.println("TIME OUT!");
+            return -1;
+        }
+        catch(IOException e) {
             e.printStackTrace();
             System.exit(1);
         }

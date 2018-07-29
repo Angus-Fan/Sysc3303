@@ -17,8 +17,13 @@ public class ErrorSimConnection extends Thread{
     private String fileName;
     private byte[] data;
     private int usingFakeSocket=0;
-    public ErrorSimConnection(DatagramPacket pack,int modified) {
+    private boolean resend=false;
+    private int modifiedPackIndex=2;
+    private int delay=0;
+    public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay) {
         this.modified=modified;
+        this.modifiedPackIndex=modifiedPackIndex;
+        this.delay=delay;
         try {
             socket = new DatagramSocket();
 
@@ -48,6 +53,111 @@ public class ErrorSimConnection extends Thread{
 
 
         while(true) {
+            if(modified==611)//lose RQ
+            {
+                if(data[1]==1||data[1]==2) {
+                    System.out.println("lost RQ");
+                    receive();
+                    continue;
+                }
+            }
+            if(modified==612)//lose data block
+            {
+                if(data[1]==3)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.println("lose data block "+modifiedPackIndex);
+                            receive();
+                            continue;
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.println("lose data block "+modifiedPackIndex);
+                            receive();
+                            continue;
+                        }
+                    }
+                }
+            }
+            if(modified==613)//lose ACK
+            {
+                if(data[1]==4)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.println("lose ACK "+modifiedPackIndex);
+                            receive();
+                            continue;
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.println("lose ACK "+modifiedPackIndex);
+                            receive();
+                            continue;
+                        }
+                    }
+                }
+            }
+            if(modified==631)//duplicate RQ
+            {
+                if(data[1]==1||data[1]==2) {
+                    System.out.println("duplicate RQ");
+                    resend=true;
+                }
+            }
+            if(modified==632)//duplicate data block
+            {
+                if(data[1]==3)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.println("duplicate data block "+modifiedPackIndex);
+                            resend=true;
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.println("duplicate data block "+modifiedPackIndex);
+                            resend=true;
+                        }
+                    }
+                }
+            }
+            if(modified==633)//lose ACK
+            {
+                if(data[1]==4)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.println("duplicate ACK "+modifiedPackIndex);
+                            resend=true;
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.println("duplicate ACK "+modifiedPackIndex);
+                            resend=true;
+                        }
+                    }
+                }
+            }
+
+
 
             if(flip)
             {
@@ -101,6 +211,59 @@ public class ErrorSimConnection extends Thread{
             // or (as we should be sending back the same thing)
             // System.out.println(received);
 
+
+            if(modified==621)  //delay RQ
+            {
+                if(data[1]==1||data[1]==2)
+                {
+                    System.out.print("dalay RQ for "+delay+" seconds");
+                    delay(delay);
+                }
+            }
+            if(modified==622)   //delay data block
+            {
+                if(data[1]==3)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.print("dalay Data block "+modifiedPackIndex+" for "+delay+" seconds");
+                            delay(delay);
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.print("dalay Data block " + modifiedPackIndex + " for "+delay+" seconds.");
+                            delay(delay);
+
+                        }
+                    }
+                }
+            }
+            if(modified==623)    //delay ACK
+            {
+                if(data[1]==4)
+                {
+                    if(modifiedPackIndex>=10)
+                    {
+                        if(data[2]==modifiedPackIndex/10&&data[3]==modifiedPackIndex%10)
+                        {
+                            System.out.print("dalay ACK "+modifiedPackIndex+" for "+delay+" seconds");
+                            delay(delay);
+                        }
+                    }
+                    else if(modifiedPackIndex<10)
+                    {
+                        if(data[3]==modifiedPackIndex) {
+                            System.out.print("dalay ACK " + modifiedPackIndex + " for "+delay+" seconds");
+                            delay(delay);
+                        }
+                    }
+                }
+            }
+
             // Send the datagram packet to the client via the send socket.
             System.out.println("modified= "+modified+" usingFakeSocket="+usingFakeSocket);
             if (modified == 5 && usingFakeSocket>=2) {
@@ -115,6 +278,13 @@ public class ErrorSimConnection extends Thread{
                 }
             } else {
                 try {
+                    if(resend)
+                    {
+                        System.out.println("duplicate package send!!");
+                        socket.send(sendPacket);
+                        delay(delay);
+                        resend=false;
+                    }
                     socket.send(sendPacket);
                     usingFakeSocket++;
                 } catch (IOException e) {
@@ -138,9 +308,23 @@ public class ErrorSimConnection extends Thread{
 
 
     }
+    public void delay(int s)
+    {
+        try
+        {
+            for(int i=0;i<s;i++) {
+                System.out.print(".");
+                Thread.sleep( 1000);
 
+            }
+            System.out.println("done");
+        }
+        catch (InterruptedException e)
+        {}
+    }
     private void receive()
     {
+        System.out.println();
         data = new byte[516];
 
         receivePacket = new DatagramPacket(data,data.length);
