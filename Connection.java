@@ -26,6 +26,9 @@ class Connection extends Thread
     private boolean dupPacket = false;
     private int hostPort=0;
     private boolean duplicateRQ=false;
+    private int timeout=5000;
+    private int maxAttempt=5;
+    private int curtAttempt=0;
     public Connection(DatagramPacket packet, int connectionID,String path)
     {
         System.out.println("Connection"+connectionID+" been created!");
@@ -71,8 +74,10 @@ class Connection extends Thread
                 else if( dupPacket)
                 {
                     System.out.println("duplicate package!!");
-                    if(!receiving(data))
+
+                    if(!timeoutReceive())
                         break;
+
                     continue;
                 }
                 else if (getOpcode() == 5) {
@@ -124,7 +129,11 @@ class Connection extends Thread
                         if( dupPacket)
                         {
                             System.out.println("duplicate package!!");
-                            if(!receiving(data))
+                            int temp=receiving(data);
+                            while(temp==0) {
+                                temp=receiving(data);
+                            }
+                            if(temp==-1)
                                 break;
                             continue;
                         }
@@ -132,7 +141,28 @@ class Connection extends Thread
                             System.out.println("sending block num " + blockNum);
                             sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
                             data = new byte[4];
-                            toBreak=receiving(data);
+
+
+
+                            curtAttempt=0;
+                            int temp=receiving(data);
+                            while(temp==0)
+                            {
+                                sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
+                                curtAttempt++;
+                                if(curtAttempt>=maxAttempt) {
+                                    System.out.println("Lost connection, connection " + connectionID + " shuts down");
+                                    sendReceiveSocket.close();
+                                }
+                                temp=receiving(data);
+                            }
+                            if(temp==-1)
+                                toBreak=true;
+                            else
+                                toBreak=false;
+
+
+
 
                             if(!toBreak)
                             {
@@ -158,13 +188,39 @@ class Connection extends Thread
 
                             data = new byte[4];
                             System.out.println("blockCount= "+blockCount);
-                            toBreak=receiving(data);
+
+
+                            curtAttempt=0;
+                            int temp=receiving(data);
+                            while(temp==0)
+                            {
+                                sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]));
+                                curtAttempt++;
+                                if(curtAttempt>=maxAttempt) {
+                                    System.out.println("Lost connection, connection " + connectionID + " shuts down");
+                                    sendReceiveSocket.close();
+                                }
+                                temp=receiving(data);
+                            }
+                            if(temp==-1)
+                                toBreak=true;
+                            else
+                                toBreak=false;
+
+
+
+
+
 
 
                             while(dupPacket)
                             {
                                 System.out.println("duplicate package!!");
-                                if(!receiving(data))
+                                temp=receiving(data);
+                                while(temp==0) {
+                                    temp=receiving(data);
+                                }
+                                if(receiving(data)==-1)
                                     break;
 
                             }
@@ -199,7 +255,7 @@ class Connection extends Thread
 
                 }
                 data = new byte[516];
-                if(!receiving(data))
+                if(!timeoutReceive())
                     break;
 
             }
@@ -411,15 +467,20 @@ class Connection extends Thread
 
 
     }
-    private boolean receiving (byte[] data)
+    private int receiving (byte[] data)
     {
 
         receivePacket = new DatagramPacket(data, data.length);
-
+        //sendReceiveSocket.receive(receivePacket);
         try {
-
+            sendReceiveSocket.setSoTimeout(timeout);
             sendReceiveSocket.receive(receivePacket);
-        } catch(IOException e) {
+        }
+        catch(SocketTimeoutException e) {
+            System.out.println("TIME OUT!");
+            return 0;
+        }
+        catch(IOException e) {
             e.printStackTrace();
             System.exit(1);
         }
@@ -449,9 +510,9 @@ class Connection extends Thread
             System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
             sending(data);
             //sendReceiveSocket.close();
-            return false;
+            return -1;
         }
-        return true;
+        return 1;
         //System.out.println("data receivied");
 
     }
@@ -605,7 +666,23 @@ class Connection extends Thread
         else
             dupPacket = false;
     }
-
+    public boolean timeoutReceive()
+    {
+        curtAttempt=0;
+        int temp=receiving(data);
+        while(temp==0)
+        {
+            curtAttempt++;
+            if(curtAttempt>=maxAttempt) {
+                System.out.println("Lost connection, connection " + connectionID + " shuts down");
+                return false;
+            }
+            temp=receiving(data);
+        }
+        if(temp==-1)
+            return false;
+        return true;
+    }
 
 
 
