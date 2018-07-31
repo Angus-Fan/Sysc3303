@@ -51,12 +51,12 @@ class Connection extends Thread
     }
     public void run()
     {
-        try {
+        /*try {
             Thread.sleep(5000);
         } catch (InterruptedException e ) {
             e.printStackTrace();
             System.exit(1);
-        }
+        }*/
 
 
         System.out.println("Connection"+connectionID+" port= "+sendReceiveSocket.getLocalPort());
@@ -75,7 +75,7 @@ class Connection extends Thread
                 {
                     System.out.println("duplicate package!!");
 
-                    if(!timeoutReceive())
+                    if(receiving(data)==-1)
                         break;
 
                     continue;
@@ -129,9 +129,9 @@ class Connection extends Thread
                         if( dupPacket)
                         {
                             System.out.println("duplicate package!!");
-                            int temp=receiving(data);
+                            int temp=receivingTimeout(data);
                             while(temp==0) {
-                                temp=receiving(data);
+                                temp=receivingTimeout(data);
                             }
                             if(temp==-1)
                                 break;
@@ -142,19 +142,20 @@ class Connection extends Thread
                             sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
                             data = new byte[4];
 
-
-
+                            DatagramPacket tempPack=receivePacket;
+                            System.out.println("111111111111111111111");
                             curtAttempt=0;
-                            int temp=receiving(data);
+                            int temp=receivingTimeout(data);
                             while(temp==0)
                             {
-                                sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
+                                sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]),tempPack);
                                 curtAttempt++;
                                 if(curtAttempt>=maxAttempt) {
                                     System.out.println("Lost connection, connection " + connectionID + " shuts down");
                                     sendReceiveSocket.close();
+                                    return;
                                 }
-                                temp=receiving(data);
+                                temp=receivingTimeout(data);
                             }
                             if(temp==-1)
                                 toBreak=true;
@@ -164,7 +165,7 @@ class Connection extends Thread
 
 
 
-                            if(!toBreak)
+                            if(toBreak)
                             {
                                 System.out.println("Connection" + connectionID + " shuts down");
                                 sendReceiveSocket.close();
@@ -190,17 +191,21 @@ class Connection extends Thread
                             System.out.println("blockCount= "+blockCount);
 
 
+                            DatagramPacket tempPack=receivePacket;
+
+                            System.out.println("22222222222222222");
                             curtAttempt=0;
-                            int temp=receiving(data);
+                            int temp=receivingTimeout(data);
                             while(temp==0)
                             {
-                                sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]));
+                                sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]),tempPack);
                                 curtAttempt++;
-                                if(curtAttempt>=maxAttempt) {
+                                /*if(curtAttempt>=maxAttempt) {
                                     System.out.println("Lost connection, connection " + connectionID + " shuts down");
                                     sendReceiveSocket.close();
-                                }
-                                temp=receiving(data);
+                                }*/
+                                temp=receivingTimeout(data);
+                                System.out.println("44444444444");
                             }
                             if(temp==-1)
                                 toBreak=true;
@@ -216,18 +221,18 @@ class Connection extends Thread
                             while(dupPacket)
                             {
                                 System.out.println("duplicate package!!");
-                                temp=receiving(data);
+                                temp=receivingTimeout(data);
                                 while(temp==0) {
-                                    temp=receiving(data);
+                                    temp=receivingTimeout(data);
                                 }
-                                if(receiving(data)==-1)
+                                if(receivingTimeout(data)==-1)
                                     break;
 
                             }
 
                             blockNum++;
                             blockCount=blockNum;
-                            if(!toBreak)
+                            if(toBreak)
                             {
                                 System.out.println("Connection" + connectionID + " shuts down");
                                 sendReceiveSocket.close();
@@ -244,7 +249,7 @@ class Connection extends Thread
                                 System.out.println("Connection" + connectionID + " received ACK");
                         }
                     }
-                    if(!toBreak)
+                    if(toBreak)
                         break;
                     byte[] endOpCode = new byte[2];// the ending code
                     endOpCode[0] = (byte) 0;
@@ -396,6 +401,22 @@ class Connection extends Thread
         System.out.println("Connection"+connectionID+" sending to "+errorSimulatorPort);
 
     }
+    private void sending(byte[] data,DatagramPacket pack)
+    {
+        String str = new String(data,0,data.length);
+        System.out.println("Connection"+connectionID+" sending package= "+str);
+
+        try {
+            sendPacket = new DatagramPacket(data, data.length,
+                    pack.getAddress(), errorSimulatorPort);
+            sendReceiveSocket.send(sendPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        System.out.println("Connection"+connectionID+" sending to "+errorSimulatorPort);
+
+    }
     private void writing(byte[] data)
     {
 
@@ -467,7 +488,7 @@ class Connection extends Thread
 
 
     }
-    private int receiving (byte[] data)
+    private int receivingTimeout (byte[] data)
     {
 
         receivePacket = new DatagramPacket(data, data.length);
@@ -516,6 +537,54 @@ class Connection extends Thread
         //System.out.println("data receivied");
 
     }
+    private int receiving (byte[] data)
+    {
+
+        receivePacket = new DatagramPacket(data, data.length);
+        //sendReceiveSocket.receive(receivePacket);
+        try {
+
+            sendReceiveSocket.receive(receivePacket);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        if(receivePacket.getPort()!=errorSimulatorPort)
+        {
+            System.out.println("Connection" + connectionID + " gets an UNKNOWN TID "+receivePacket.getPort());
+        }
+        if((data[1]==1||data[1]==2)&&duplicateRQ)
+        {
+            System.out.println("Connection" + connectionID + " gets a duplicate request");
+
+            return receiving(data);
+        }
+        errorCheck();
+        if(!dupPacket)
+            storeOpcode();
+        if(errorCode!=8)
+        {
+
+            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+            data=new byte[5+errorMsg.getBytes().length];
+            data[0]=(byte)0;
+            data[1]=(byte)5;
+            data[2]=(byte)0;
+            data[3]=(byte)errorCode;
+            data[data.length-1]=(byte)0;
+            System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+            sending(data);
+            //sendReceiveSocket.close();
+            return -1;
+        }
+        return 1;
+        //System.out.println("data receivied");
+
+    }
+
+
+
     private void constructArray() {
 
         msg = new byte[4];

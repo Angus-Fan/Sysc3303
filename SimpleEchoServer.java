@@ -8,17 +8,20 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class SimpleEchoServer {
     private DatagramPacket receivePacket;
     private DatagramSocket  receiveSocket;
     private int connectionCount=0;
+    private ArrayList hostTID;
     private  String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
 
 
     public SimpleEchoServer()
     {
+        hostTID=new ArrayList<Integer>();
         try {
             // Construct a datagram socket and bind it to any available
             // port on the local host machine. This socket will be used to
@@ -72,10 +75,11 @@ public class SimpleEchoServer {
         String received = new String(data,0,len);
         System.out.println(received + "\n");
 
-
-        Connection connection=new Connection(receivePacket,connectionCount++,path);
-        connection.start();
-
+        if(!hostTID.contains(receivePacket.getPort())) {
+            hostTID.add(receivePacket.getPort());
+            Connection connection = new Connection(receivePacket, connectionCount++, path);
+            connection.start();
+        }
     }
     private void readFilePath(Scanner scan) {
 

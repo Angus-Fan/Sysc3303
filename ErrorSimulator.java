@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 
@@ -9,7 +10,9 @@ public class ErrorSimulator{
     private DatagramSocket receiveSocket;
     private int modifiedPackIndex=0;
     private int delayAmount=0;
+    private ArrayList clientsTID;
     public ErrorSimulator() {
+        clientsTID=new ArrayList<Integer>();
         try {
             receiveSocket = new DatagramSocket(23);
         }
@@ -26,7 +29,7 @@ public class ErrorSimulator{
 
 
         try {
-            System.out.println("we are now waiting");
+            System.out.println("we are now waiting1");
             receiveSocket.receive(receivePacket);
 
         }
@@ -35,15 +38,25 @@ public class ErrorSimulator{
             System.exit(1);
         }
 
-        ErrorSimConnection errorSimulator=new ErrorSimConnection(receivePacket,modified,modifiedPackIndex,delayAmount);
-        errorSimulator.start();
+        if(!clientsTID.contains(receivePacket.getPort())) {
+            clientsTID.add(receivePacket.getPort());
+            ErrorSimConnection errorSimulator = new ErrorSimConnection(receivePacket, modified, modifiedPackIndex, delayAmount);
+            errorSimulator.start();
+        }else {
+
+            ErrorSimConnection errorSimulator = new ErrorSimConnection(receivePacket, 0, modifiedPackIndex, delayAmount);
+            errorSimulator.start();
+        }
+
 
 
     }
 
     private void userInput()
     {
-        System.out.println("Which Error would you like to simulate (4-5) or 0 for no Error : ");
+        System.out.println("Which Error would you like to simulate (4-6) or 0 for no Error : ");
+        System.out.println("6 is iteration 4 errors (delays/duplicates/etc)");
+
         Scanner scan = new Scanner(System.in);
         int choice = scan.nextInt();
         while(true) {

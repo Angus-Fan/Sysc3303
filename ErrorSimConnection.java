@@ -36,6 +36,7 @@ public class ErrorSimConnection extends Thread{
     }
 
     public void run() {
+
         clientsTID=receivePacket.getPort();
         data=receivePacket.getData();
         byte newdata[] = new byte[receivePacket.getLength()];
@@ -53,14 +54,20 @@ public class ErrorSimConnection extends Thread{
 
 
         while(true) {
+
             if(modified==611)//lose RQ
             {
                 if(data[1]==1||data[1]==2) {
                     System.out.println("lost RQ");
+
+                    modified=0;
+
                     receive();
+
                     continue;
                 }
             }
+
             if(modified==612)//lose data block
             {
                 if(data[1]==3)
@@ -71,7 +78,8 @@ public class ErrorSimConnection extends Thread{
                         {
                             System.out.println("lose data block "+modifiedPackIndex);
                             receive();
-                            continue;
+                            modified=0;
+                            //continue;
                         }
                     }
                     else if(modifiedPackIndex<10)
@@ -79,9 +87,14 @@ public class ErrorSimConnection extends Thread{
                         if(data[3]==modifiedPackIndex) {
                             System.out.println("lose data block "+modifiedPackIndex);
                             receive();
-                            continue;
+                            modified=0;
+                            //continue;
                         }
                     }
+                    /*if(flip)
+                        flip=false;
+                    else
+                        flip=true;*/
                 }
             }
             if(modified==613)//lose ACK
@@ -94,6 +107,7 @@ public class ErrorSimConnection extends Thread{
                         {
                             System.out.println("lose ACK "+modifiedPackIndex);
                             receive();
+                            modified=0;
                             continue;
                         }
                     }
@@ -102,9 +116,14 @@ public class ErrorSimConnection extends Thread{
                         if(data[3]==modifiedPackIndex) {
                             System.out.println("lose ACK "+modifiedPackIndex);
                             receive();
+                            modified=0;
                             continue;
                         }
                     }
+                    if(flip)
+                        flip=false;
+                    else
+                        flip=true;
                 }
             }
             if(modified==631)//duplicate RQ
@@ -135,7 +154,7 @@ public class ErrorSimConnection extends Thread{
                     }
                 }
             }
-            if(modified==633)//lose ACK
+            if(modified==633)//duplicate ACK
             {
                 if(data[1]==4)
                 {
@@ -191,23 +210,23 @@ public class ErrorSimConnection extends Thread{
                 }
             }
 
-            if(serversTID==0)
-                portToSend=69;
-            else if(flip) {
-                System.out.println("sending to server");
-                portToSend = serversTID;
-                flip=false;
-            }
-            else {
-                System.out.println("sending to client");
-                flip=true;
-                portToSend = clientsTID;
-            }
+                if (serversTID == 0)
+                    portToSend = 69;
+                else if (flip) {
+                    System.out.println("sending to server");
+                    portToSend = serversTID;
+                    flip = false;
+                } else {
+                    System.out.println("sending to client");
+                    flip = true;
+                    portToSend = clientsTID;
+                }
 
-            sendPacket = new DatagramPacket(data, data.length,
-                    receivePacket.getAddress(), portToSend);
+                sendPacket = new DatagramPacket(data, data.length,
+                        receivePacket.getAddress(), portToSend);
 
-            printInfoToSend(sendPacket);
+                printInfoToSend(sendPacket);
+
             // or (as we should be sending back the same thing)
             // System.out.println(received);
 
@@ -264,43 +283,43 @@ public class ErrorSimConnection extends Thread{
                 }
             }
 
-            // Send the datagram packet to the client via the send socket.
-            System.out.println("modified= "+modified+" usingFakeSocket="+usingFakeSocket);
-            if (modified == 5 && usingFakeSocket>=2) {
-                System.out.println("Using the fake Socket");
-                try {
-                    fakeSocket = new DatagramSocket();
-                    fakeSocket.send(sendPacket);
+                // Send the datagram packet to the client via the send socket.
+                System.out.println("modified= " + modified + " usingFakeSocket=" + usingFakeSocket);
+                if (modified == 5 && usingFakeSocket >= 2) {
+                    System.out.println("Using the fake Socket");
+                    try {
+                        fakeSocket = new DatagramSocket();
+                        fakeSocket.send(sendPacket);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-            } else {
-                try {
-                    if(resend)
-                    {
-                        System.out.println("duplicate package send!!");
-                        socket.send(sendPacket);
-                        delay(delay);
-                        resend=false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(1);
                     }
-                    socket.send(sendPacket);
-                    usingFakeSocket++;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.exit(1);
+                } else {
+                    try {
+                        if (resend) {
+                            System.out.println("duplicate package send!!");
+                            socket.send(sendPacket);
+                            delay(delay);
+                            resend = false;
+                        }
+                        socket.send(sendPacket);
+                        usingFakeSocket++;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
                 }
-            }
-            System.out.println("InterHost: packet sent");
-            if(data[1]==(byte)0) {
+                System.out.println("InterHost: packet sent");
+                if (data[1] == (byte) 0) {
 
-                break;
-            }
+                    break;
+                }
 
-            receive();
-            if(serversTID==0)
-                serversTID=receivePacket.getPort();
+                receive();
+                if (serversTID == 0)
+                    serversTID = receivePacket.getPort();
+
         }
         System.out.println("Host thread shuts down");
 

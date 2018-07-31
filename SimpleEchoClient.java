@@ -24,6 +24,8 @@ public class SimpleEchoClient{
   private int timeout=3000;
   private int maxAttempt=5;
   private int curtAttempt=0;
+  private byte[] previousPacket = new byte[4];
+  private boolean dupPacket = false;
   public SimpleEchoClient()
   {
 
@@ -54,7 +56,7 @@ public class SimpleEchoClient{
     byte data[] = new byte[516];
 
     int dataSize= receiving(data);
-    curtAttempt=0;
+    /*curtAttempt=0;
     while(dataSize==-1)
     {
       if(curtAttempt>=maxAttempt)
@@ -66,8 +68,8 @@ public class SimpleEchoClient{
       curtAttempt++;
       System.out.println("Resending the request");
       sending(msg);
-      dataSize= receiving(data);
-    }
+      dataSize= receivingTimeout(data);
+    }*/
 
     while(receivePacket.getData()[1]!=(byte)0)
     {
@@ -140,7 +142,7 @@ public class SimpleEchoClient{
 
       // resend RQ when timeout
       int temp=receiving(data1);
-      curtAttempt=0;
+      /*curtAttempt=0;
       while(temp==-1)
       {
         if(curtAttempt>=maxAttempt)
@@ -153,7 +155,7 @@ public class SimpleEchoClient{
         System.out.println("Resending the request");
         sending(msg);
         temp= receiving(data1);
-      }
+      }*/
 
 
 
@@ -413,6 +415,43 @@ public class SimpleEchoClient{
     receivePacket = new DatagramPacket(data1, data1.length);
 
     try {
+      sendReceiveSocket.setSoTimeout(0);
+      sendReceiveSocket.receive(receivePacket);
+    }
+
+    catch(IOException e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
+
+    checkDup();
+    if(!dupPacket) {
+      storeOpcode();
+
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data= " + newdata.length);
+
+
+      if (hostPort == 0)
+        hostPort = receivePacket.getPort();
+      data1 = trimByteArr(data1);
+      return newdata.length;
+    }
+    else
+      return receiving(data1);
+  }
+  private int receivingTimeout (byte[] data1)
+  {
+
+    receivePacket = new DatagramPacket(data1, data1.length);
+
+    try {
       sendReceiveSocket.setSoTimeout(timeout);
       sendReceiveSocket.receive(receivePacket);
     }
@@ -424,21 +463,28 @@ public class SimpleEchoClient{
       e.printStackTrace();
       System.exit(1);
     }
-    printInfoReceived(receivePacket,data1);
 
-    byte[] newdata = new byte[getLen(receivePacket)];
-    for(int i=0;i<newdata.length;i++)
-    {
-      newdata[i]=data1[i];
+    checkDup();
+    if(!dupPacket) {
+      storeOpcode();
+
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data= " + newdata.length);
+
+
+      if (hostPort == 0)
+        hostPort = receivePacket.getPort();
+      data1 = trimByteArr(data1);
+      return newdata.length;
     }
-    data1=newdata;
-    System.out.println("new data= "+newdata.length);
-
-
-    if(hostPort==0)
-      hostPort=receivePacket.getPort();
-    data1=trimByteArr(data1);
-    return newdata.length;
+    else
+      return 0;
   }
 
 
@@ -513,7 +559,7 @@ public class SimpleEchoClient{
     msg[0] = (byte)0;
 
     msg[1] = (byte)4;
-
+/*
     if(blockCount<10)
     {
       msg[2] = (byte)0;
@@ -523,7 +569,9 @@ public class SimpleEchoClient{
     {
       msg[2] = (byte)(int)(blockCount%10);
       msg[3] =(byte)blockCount;
-    }
+    }*/
+    msg[2]=receivePacket.getData()[2];
+    msg[3]=receivePacket.getData()[3];
 
 
 
@@ -556,6 +604,31 @@ public class SimpleEchoClient{
 
 
   }
+  private void storeOpcode()
+  {
+    for (int i = 0; i<4; i++)
+      previousPacket[i] = receivePacket.getData()[i];
+  }
+
+  private void checkDup()
+  {
+
+    int four = 0;
+    for (int i = 0; i<4; i++)
+    {
+
+      if(previousPacket[i] == receivePacket.getData()[i])
+        four++;
+    }
+    if(four == 4) {
+
+      dupPacket = true;
+    }
+    else
+      dupPacket = false;
+  }
+
+
   private void close()
   {
     sendReceiveSocket.close();
