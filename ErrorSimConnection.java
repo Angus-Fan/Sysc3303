@@ -217,7 +217,7 @@ public class ErrorSimConnection extends Thread{
 
                 if (serversTID == 0)
                     portToSend = 69;
-                else if (flip) {
+                else if (receivePacket.getPort()==clientsTID) {
                     System.out.println("sending to server");
                     portToSend = serversTID;
                     flip = false;

@@ -55,7 +55,7 @@ public class ErrorSimulator{
     private void userInput()
     {
         System.out.println("Which Error would you like to simulate (4-6) or 0 for no Error : ");
-        System.out.println("6 is iteration 4 errors (delays/duplicates/etc)");
+        System.out.println("7 is iteration 4 errors (delays/duplicates/etc)");
 
         Scanner scan = new Scanner(System.in);
         int choice = scan.nextInt();
@@ -145,7 +145,7 @@ public class ErrorSimulator{
                 modified=0;
                 break;
             }
-            if(choice==6) {
+            if(choice==7) {
 
                 System.out.println("Which Error would you like to simulate( [1:Lose a packet] [2:Delay a packet] [3:Duplicate a packet] ) : ");
                 Scanner errorScan = new Scanner(System.in);

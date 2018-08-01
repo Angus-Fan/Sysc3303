@@ -80,6 +80,10 @@ public class SimpleEchoServer {
             Connection connection = new Connection(receivePacket, connectionCount++, path);
             connection.start();
         }
+        else
+        {
+            System.out.println("Server: got duplicate request");
+        }
     }
     private void readFilePath(Scanner scan) {
 

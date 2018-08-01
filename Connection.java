@@ -26,7 +26,7 @@ class Connection extends Thread
     private boolean dupPacket = false;
     private int hostPort=0;
     private boolean duplicateRQ=false;
-    private int timeout=5000;
+    private int timeout=50000;
     private int maxAttempt=5;
     private int curtAttempt=0;
     public Connection(DatagramPacket packet, int connectionID,String path)
@@ -71,9 +71,27 @@ class Connection extends Thread
 
                     break;
                 }
-                else if( dupPacket)
+                else if (getOpcode() == 3) {
+                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]);
+                    if(dupPacket) {
+                        byte[] toFile = new byte[data.length - 4];
+                        for (int i = 0; i < data.length - 4; i++)
+                            toFile[i] = data[i + 4];
+                        toFile = trimByteArr(toFile);
+                        fileIO(2, toFile);
+                        if (errorCode != 8) {
+                            System.out.println("Connection" + connectionID + " shuts down");
+                            return;
+                        }
+                    }
+                    constructArray();
+                    if(!dupPacket)
+                        blockCount++;
+                    sending(msg);
+                }
+                else if(dupPacket)
                 {
-                    System.out.println("duplicate package!!");
+                    System.out.println("duplicate package!");
 
                     if(receiving(data)==-1)
                         break;
@@ -87,27 +105,13 @@ class Connection extends Thread
                     sendReceiveSocket.close();
                     return;
                 }
-                else if (getOpcode() == 3) {
-                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]);
-                    byte[] toFile = new byte[data.length - 4];
-                    for (int i = 0; i < data.length - 4; i++)
-                        toFile[i] = data[i + 4];
-                    toFile = trimByteArr(toFile);
-                    fileIO(2, toFile);
-                    if(errorCode!=8) {
-                        System.out.println("Connection" + connectionID + " shuts down");
-                        return;
-                    }
-                    constructArray();
-
-                    blockCount++;
-                    sending(msg);
-                } else if (getOpcode() == 2)    //Writing request
+                else if (getOpcode() == 2)    //Writing request
                 {
                     System.out.println("Connection" + connectionID + " received write request");
                     duplicateRQ=true;
-                    blockCount = 1;
+                    blockCount = 0;
                     constructArray();
+                    blockCount = 1;
                     sending(msg);
                 } else if (getOpcode() == 1)   //Reading request
                 {
@@ -126,7 +130,7 @@ class Connection extends Thread
                     int blockNum = 1;
                     boolean toBreak=true;
                     while (true) {
-                        if( dupPacket)
+                        while ( dupPacket)
                         {
                             System.out.println("duplicate package!!");
                             int temp=receivingTimeout(data);
@@ -143,18 +147,18 @@ class Connection extends Thread
                             data = new byte[4];
 
                             DatagramPacket tempPack=receivePacket;
-                            System.out.println("111111111111111111111");
+                            System.out.println("111111111111111111111 "+ fullFileData[fullFileData.length - 1]);
                             curtAttempt=0;
                             int temp=receivingTimeout(data);
                             while(temp==0)
                             {
                                 sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]),tempPack);
                                 curtAttempt++;
-                                if(curtAttempt>=maxAttempt) {
+                                /*if(curtAttempt>=maxAttempt) {
                                     System.out.println("Lost connection, connection " + connectionID + " shuts down");
                                     sendReceiveSocket.close();
                                     return;
-                                }
+                                }*/
                                 temp=receivingTimeout(data);
                             }
                             if(temp==-1)
@@ -180,7 +184,7 @@ class Connection extends Thread
                                 return;
                             }
                             else {
-                                System.out.println("Connection" + connectionID + " received ACK");
+                                System.out.println("Connection" + connectionID + " received ACK"+data[2]+data[3]);
                                 break;
                             }
                         } else {
@@ -220,15 +224,24 @@ class Connection extends Thread
 
                             while(dupPacket)
                             {
-                                System.out.println("duplicate package!!");
+                                System.out.println("duplicate Ack!!!");
                                 temp=receivingTimeout(data);
+                                /*
+                                System.out.println("WE PASSED TIMEOUT1");
                                 while(temp==0) {
+                                    System.out.println("WE ENETERED TIMEOUT temp 0");
                                     temp=receivingTimeout(data);
                                 }
-                                if(receivingTimeout(data)==-1)
+                                if(receivingTimeout(data)==-1) {
+                                     = -1");
                                     break;
-
+                                }
+                                System.out.println("END OF WHILE");*/
                             }
+                            //System.out.println("duplicate Ack!!!:  "+data[0]+data[1]+data[2]+data[3]);
+
+
+
 
                             blockNum++;
                             blockCount=blockNum;
@@ -246,7 +259,7 @@ class Connection extends Thread
                                 return;
                             }
                             else
-                                System.out.println("Connection" + connectionID + " received ACK");
+                                System.out.println("Connection" + connectionID + " received ACK"+data[2]+data[3]);
                         }
                     }
                     if(toBreak)
@@ -291,11 +304,12 @@ class Connection extends Thread
             System.out.println("Reading file from: " + (path + fileName));
             File file = new File(path + fileName);
             int size = (int) file.length();
+            System.out.println("File size: "+size);
             numPack = (int) Math.ceil(size / 512.0);
             int finalPacket = 0;
             if (numPack != 0)
                 finalPacket = size % 512;
-            System.out.println("Packages need to send " + finalPacket);
+            System.out.println("Packages need to send " + numPack);
             fullFileData=new byte[numPack][512];
 
             try {
@@ -496,6 +510,7 @@ class Connection extends Thread
         try {
             sendReceiveSocket.setSoTimeout(timeout);
             sendReceiveSocket.receive(receivePacket);
+            System.out.println("we opened the receivePort");
         }
         catch(SocketTimeoutException e) {
             System.out.println("TIME OUT!");

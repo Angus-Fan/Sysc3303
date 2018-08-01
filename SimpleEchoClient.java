@@ -175,7 +175,7 @@ public class SimpleEchoClient{
 
 
         curtAttempt=0;
-        temp=receiving(data1);
+        temp=receivingTimeout(data1);
         while(temp==-1)
         {
           if(curtAttempt>=maxAttempt)
@@ -461,6 +461,7 @@ public class SimpleEchoClient{
         ack(data1);
         sending(msg);
       }
+
       return receiving(data1);
     }
   }
@@ -501,8 +502,20 @@ public class SimpleEchoClient{
       data1 = trimByteArr(data1);
       return newdata.length;
     }
-    else
+    else {
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data(duppack!!)= " + newdata.length);
+
+
+
       return 0;
+    }
   }
 
 
