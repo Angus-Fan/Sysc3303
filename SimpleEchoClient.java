@@ -443,8 +443,26 @@ public class SimpleEchoClient{
       data1 = trimByteArr(data1);
       return newdata.length;
     }
-    else
+    else {
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data(duppack!!)= " + newdata.length);
+
+
+
+      if(data1[1]==3)
+      {
+        System.out.println("resend ACK!");
+        ack(data1);
+        sending(msg);
+      }
       return receiving(data1);
+    }
   }
   private int receivingTimeout (byte[] data1)
   {
@@ -507,7 +525,11 @@ public class SimpleEchoClient{
     // Form a String from the byte array.
     String received = new String(dataByte,0,len);
     System.out.println(received);
-
+    System.out.println();
+    for(int x = 0;x<len;x++) {
+      System.out.print(pack.getData()[x]);
+    }
+    System.out.println();
 
   }
   private byte[] trimByteArr(byte[] data)

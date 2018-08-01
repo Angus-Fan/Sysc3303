@@ -108,6 +108,10 @@ public class ErrorSimConnection extends Thread{
                             System.out.println("lose ACK "+modifiedPackIndex);
                             receive();
                             modified=0;
+                            if(flip)
+                                flip=false;
+                            else
+                                flip=true;
                             continue;
                         }
                     }
@@ -117,13 +121,14 @@ public class ErrorSimConnection extends Thread{
                             System.out.println("lose ACK "+modifiedPackIndex);
                             receive();
                             modified=0;
+                            if(flip)
+                                flip=false;
+                            else
+                                flip=true;
                             continue;
                         }
                     }
-                    if(flip)
-                        flip=false;
-                    else
-                        flip=true;
+
                 }
             }
             if(modified==631)//duplicate RQ
