@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 
 public class ErrorSimConnection extends Thread{
@@ -20,12 +21,15 @@ public class ErrorSimConnection extends Thread{
     private boolean resend=false;
     private int modifiedPackIndex=2;
     private int delay=0;
+    //private String ipAddr;
+    private InetAddress addressToSend=null;
     public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay) {
         this.modified=modified;
         this.modifiedPackIndex=modifiedPackIndex;
         this.delay=delay;
         try {
             socket = new DatagramSocket();
+            //ipAddr = socket.getLocalAddress().getHostAddress();
 
         }
         catch (SocketException se){
@@ -221,14 +225,38 @@ public class ErrorSimConnection extends Thread{
                     System.out.println("sending to server");
                     portToSend = serversTID;
                     flip = false;
+                    try {
+                    addressToSend=InetAddress.getByName("134.117.58.16");
+                    }
+                    catch (Exception e)
+                    {System.out.println("SOMETHINGWRONG WITH THE IP!!");}
                 } else {
                     System.out.println("sending to client");
                     flip = true;
                     portToSend = clientsTID;
+                    try {
+                    addressToSend= InetAddress.getLocalHost();
+                    }
+                    catch (Exception e)
+                    {}
                 }
 
+
+            try {
+                addressToSend= InetAddress.getLocalHost();
+            }
+            catch (Exception e)
+            {}
+
+
+                try {
+                    addressToSend=InetAddress.getByName("134.117.58.16");
+                }
+                catch (Exception e)
+                {}
+
                 sendPacket = new DatagramPacket(data, data.length,
-                        receivePacket.getAddress(), portToSend);
+                        addressToSend, portToSend);
 
                 printInfoToSend(sendPacket);
 
