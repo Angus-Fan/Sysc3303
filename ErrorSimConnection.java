@@ -219,14 +219,20 @@ public class ErrorSimConnection extends Thread{
                 }
             }
 
-                if (serversTID == 0)
+                if (serversTID == 0) {
+                    try {
+                        addressToSend=InetAddress.getByName("134.117.59.205");
+                    }
+                    catch (Exception e)
+                    {System.out.println("SOMETHINGWRONG WITH THE IP!!");}
                     portToSend = 69;
+                }
                 else if (receivePacket.getPort()==clientsTID) {
                     System.out.println("sending to server");
                     portToSend = serversTID;
                     flip = false;
                     try {
-                    addressToSend=InetAddress.getByName("134.117.58.16");
+                    addressToSend=InetAddress.getByName("134.117.59.205");
                     }
                     catch (Exception e)
                     {System.out.println("SOMETHINGWRONG WITH THE IP!!");}
@@ -242,7 +248,7 @@ public class ErrorSimConnection extends Thread{
                 }
 
 
-            try {
+            /*try {
                 addressToSend= InetAddress.getLocalHost();
             }
             catch (Exception e)
@@ -250,10 +256,10 @@ public class ErrorSimConnection extends Thread{
 
 
                 try {
-                    addressToSend=InetAddress.getByName("134.117.58.16");
+                    addressToSend=InetAddress.getByName("134.117.59.205");
                 }
                 catch (Exception e)
-                {}
+                {}*/
 
                 sendPacket = new DatagramPacket(data, data.length,
                         addressToSend, portToSend);
