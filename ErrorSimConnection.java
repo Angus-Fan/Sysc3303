@@ -25,6 +25,7 @@ public class ErrorSimConnection extends Thread{
     private InetAddress addressToSend=null;
     public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay,String addToSend) {
         this.modified=modified;
+        System.out.println("addToSend= "+addToSend);
         this.addToSend=addToSend;
         this.modifiedPackIndex=modifiedPackIndex;
         this.delay=delay;
@@ -188,13 +189,15 @@ public class ErrorSimConnection extends Thread{
 
 
 
-            if(flip)
+            if(receivePacket.getPort()==clientsTID)
             {
                 if (modified == 411) {
-                    data = badOpCode();
+                    {
+                        if(data[1]==(byte)1||data[1]==(byte)2)
+                            data = badOpCode();
+                    }
                 }  else if (modified == 421) {
                     if (data[1] == (byte) 3) {
-
                         data = badOpCode();
                     }
                 } else if (modified == 422) {
@@ -223,6 +226,7 @@ public class ErrorSimConnection extends Thread{
                 if (serversTID == 0) {
                     if(addToSend.compareTo("")==0)
                     {
+
                         try {
                             addressToSend=InetAddress.getLocalHost();
                         }
@@ -231,6 +235,7 @@ public class ErrorSimConnection extends Thread{
                     }
                     else {
                         try {
+                            System.out.println("SENDING TO "+addToSend);
                             addressToSend = InetAddress.getByName(addToSend);
                         } catch (Exception e) {
                             System.out.println("SOMETHINGWRONG WITH THE IP!!");
@@ -270,11 +275,11 @@ public class ErrorSimConnection extends Thread{
                 }
 
 
-            try {
+            /*try {
                 addressToSend= InetAddress.getLocalHost();
             }
             catch (Exception e)
-            {}
+            {}*/
 
 
                /* try {
@@ -473,10 +478,10 @@ public class ErrorSimConnection extends Thread{
         badOpCodeBytes = receivePacket.getData();
         badOpCodeBytes[0] = 1;
         badOpCodeBytes[1] = 1;
-        System.out.print("MODIFIED OPCODE = ");
+        System.out.println("OPCODE MODIFIED");/*
         for(int x = 0;x<badOpCodeBytes.length;x++) {
             System.out.print(badOpCodeBytes[x]);
-        }
+        }*/
         return badOpCodeBytes;
 
     }

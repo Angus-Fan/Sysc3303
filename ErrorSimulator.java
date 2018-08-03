@@ -322,7 +322,7 @@ public class ErrorSimulator{
                 System.out.println("Please enter the inetAddress");
                 System.out.println("The current inetAddress is :" + netAdd );
                 Scanner inetScanner = new Scanner(System.in);
-                String addToSend = inetScanner.nextLine();
+                addToSend = inetScanner.nextLine();
                 System.out.println(("You chose to send to " + addToSend));
 
                 useOrNot = true;

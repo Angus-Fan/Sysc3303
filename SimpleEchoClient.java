@@ -55,7 +55,7 @@ public class SimpleEchoClient{
 
     byte data[] = new byte[516];
 
-    int dataSize= receiving(data);
+    int dataSize= firstReceive(data);
     /*curtAttempt=0;
     while(dataSize==-1)
     {
@@ -71,7 +71,7 @@ public class SimpleEchoClient{
       dataSize= receivingTimeout(data);
     }*/
 
-    while(receivePacket.getData()[1]!=(byte)0)
+    while(receivePacket.getData().length==516)
     {
 
       if(receivePacket.getData()[1]==(byte)5) {
@@ -104,6 +104,34 @@ public class SimpleEchoClient{
       dataSize=receiving(data);
 
     }
+
+
+
+    if(receivePacket.getData()[1]==(byte)5) {
+      System.out.println(new String(receivePacket.getData(), 4, dataSize-5));
+
+    }
+
+    byte[] newdata = new byte[dataSize];
+    for(int i=0;i<newdata.length;i++)
+    {
+      newdata[i]=data[i];
+    }
+    data=newdata;
+
+    byte[] toFile= new byte[data.length-4];
+
+    for(int i =0;i<data.length-4;i++)
+    {
+      toFile[i]=data[i+4];
+
+    }
+    blockCount++;
+
+    if(!writting(toFile))
+      return;
+    ack(data);
+    sending(msg);
     System.out.println("End with the RRQ ");
 
 
@@ -117,15 +145,23 @@ public class SimpleEchoClient{
     byte[] fileData  = new byte[512];
     System.out.println("Reading file from: "+(path+fileName));
     try {
-      is = new FileInputStream((path+fileName));
+      /*is = new FileInputStream((path+fileName));
       int    bytesRead = is.read(fileData);
       while(bytesRead != -1) {
         numPack++;
         fileData = new byte[512];
         bytesRead = is.read(fileData);
       }
-      is.close();
+      is.close();*/
 
+
+      File file = new File(path + fileName);
+      int size = (int) file.length();
+      System.out.println("File size: "+size);
+      numPack = (int) Math.ceil(size / 512.0);
+      int finalPacket = 0;
+      if (numPack != 0)
+        finalPacket = size % 512;
 
 
       System.out.println("Packages need to send "+numPack);
@@ -141,7 +177,7 @@ public class SimpleEchoClient{
       byte data1[] = new byte[516];
 
       // resend RQ when timeout
-      int temp=receiving(data1);
+      int temp=firstReceive(data1);
       /*curtAttempt=0;
       while(temp==-1)
       {
@@ -194,13 +230,21 @@ public class SimpleEchoClient{
         {
           return;
         }
-
+        /*if(blockNum==numPack-1)
+          break;*/
+      }
+      if(finalPacket==0)
+      {
+        numPack++;
+        msg =new byte[4];
+        msg[0]=(byte)0;
+        msg[1]=(byte)3;
+        msg[2]=(byte)(numPack/10);
+        msg[3]=(byte)(numPack%10);
+        sending(msg);
       }
       is.close();
-      msg =new byte[2];
-      msg[0]=(byte)0;
-      msg[1]=(byte)0;
-      sending(msg);
+
     }
     catch (FileNotFoundException e)
     {
@@ -518,6 +562,59 @@ public class SimpleEchoClient{
     }
   }
 
+  private int firstReceive(byte[] data1)
+  {
+
+    receivePacket = new DatagramPacket(data1, data1.length);
+
+    try {
+      sendReceiveSocket.setSoTimeout(20000);
+      sendReceiveSocket.receive(receivePacket);
+    }
+    catch(SocketTimeoutException e) {
+      System.out.println("TIME OUT!");
+      System.out.println("No connection, Client shuts down");
+      System.exit(0);
+    }
+    catch(IOException e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
+
+    checkDup();
+    if(!dupPacket) {
+      storeOpcode();
+
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data= " + newdata.length);
+
+
+      if (hostPort == 0)
+        hostPort = receivePacket.getPort();
+      data1 = trimByteArr(data1);
+      return newdata.length;
+    }
+    else {
+      printInfoReceived(receivePacket, data1);
+
+      byte[] newdata = new byte[getLen(receivePacket)];
+      for (int i = 0; i < newdata.length; i++) {
+        newdata[i] = data1[i];
+      }
+      data1 = newdata;
+      System.out.println("new data(duppack!!)= " + newdata.length);
+
+
+
+      return 0;
+    }
+  }
 
 
   private void printInfoToSend(DatagramPacket pack) {
