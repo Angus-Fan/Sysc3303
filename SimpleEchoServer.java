@@ -16,12 +16,40 @@ public class SimpleEchoServer {
     private DatagramSocket  receiveSocket;
     private int connectionCount=0;
     private ArrayList hostTID;
-    private  String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
+    private String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
+    private ArrayList<Connection> thread;
+    private ShutDownThread shutDownThread;
+
+
+    class ShutDownThread extends Thread {
+
+        public ShutDownThread() {
+
+        }
+
+        public void run() {
+            Scanner keyboard = new Scanner(System.in);
+            System.out.println("type 0 to shutdown the server!");
+            if (keyboard.nextInt() == 0) {
+                keyboard.close();
+
+                receiveSocket.close();
+                shutDown();
+            }
+        }
+
+
+
+    }
+
+
 
 
     public SimpleEchoServer()
     {
+        thread=new ArrayList<Connection>();
         hostTID=new ArrayList<Integer>();
+        shutDownThread=new ShutDownThread();
         try {
             // Construct a datagram socket and bind it to any available
             // port on the local host machine. This socket will be used to
@@ -41,7 +69,7 @@ public class SimpleEchoServer {
         }
     }
 
-    private void receiveAndEcho()
+    private boolean receiveAndEcho()
     {
         // Construct a DatagramPacket for receiving packets up
         // to 100 bytes long (the length of the byte array).
@@ -56,7 +84,14 @@ public class SimpleEchoServer {
         try {
             System.out.println("Waiting..."); // so we know we're waiting
             receiveSocket.receive(receivePacket);
-        } catch (IOException e) {
+        }
+        catch (SocketException e)
+        {
+            System.out.println("server receive socket shuts down!");
+            shutDown();
+            return false;
+        }
+        catch (IOException e) {
             System.out.print("IO Exception: likely:");
             System.out.println("Receive Socket Timed Out.\n" + e);
             e.printStackTrace();
@@ -79,11 +114,14 @@ public class SimpleEchoServer {
             hostTID.add(receivePacket.getPort());
             Connection connection = new Connection(receivePacket, connectionCount++, path);
             connection.start();
+
+            thread.add(connection);
         }
         else
         {
             System.out.println("Server: got duplicate request");
         }
+        return true;
     }
     private void readFilePath(Scanner scan) {
 
@@ -94,7 +132,29 @@ public class SimpleEchoServer {
 
 
     }
+    private void shutDown() {
+        for (int i = thread.size() - 1; i >= 0; i--) {
+            if (thread.get(i).isAlive()) {
 
+                try {
+                    System.out.println("Waiting for connection"+i+" to shutdown");
+                    thread.get(i).join();
+
+                } catch (Exception e) {
+                }
+            }
+        }
+        System.out.println("Server shuts down");
+       // System.exit(0);
+    }
+
+
+
+
+    public void startListen()
+    {
+        shutDownThread.start();
+    }
     private void close()
     {
         receiveSocket.close();
@@ -103,16 +163,19 @@ public class SimpleEchoServer {
     {
         SimpleEchoServer c = new SimpleEchoServer();
         Scanner keyboard = new Scanner(System.in);
+        //ShutDownThread shutDownThread= new ShutDownThread();
         c.readFilePath(keyboard);
+        //shutDownThread.start();
+        c.startListen();
         while(true) {
-        	System.out.println("Type 1 to close the server or 0 to continue");
+        	/*System.out.println("Type 1 to close the server or 0 to continue");
             if(keyboard.nextInt() == 1)
+                break;*/
+            if(!c.receiveAndEcho())
                 break;
-            c.receiveAndEcho();  
         }
-        keyboard.close();
-        c.close(); // This is shutdown 
+        //keyboard.close();
+        //c.close(); // This is shutdown
     }
 
 }
-

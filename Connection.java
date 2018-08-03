@@ -26,7 +26,7 @@ class Connection extends Thread
     private boolean dupPacket = false;
     private int hostPort=0;
     private boolean duplicateRQ=false;
-    private int timeout=50000;
+    private int timeout=20000;
     private int maxAttempt=5;
     private int curtAttempt=0;
     public Connection(DatagramPacket packet, int connectionID,String path)
@@ -73,11 +73,13 @@ class Connection extends Thread
                 }
                 else if (getOpcode() == 3) {
                     System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]);
-                    if(dupPacket) {
+                    if(!dupPacket) {
                         byte[] toFile = new byte[data.length - 4];
                         for (int i = 0; i < data.length - 4; i++)
                             toFile[i] = data[i + 4];
                         toFile = trimByteArr(toFile);
+
+
                         fileIO(2, toFile);
                         if (errorCode != 8) {
                             System.out.println("Connection" + connectionID + " shuts down");
@@ -147,7 +149,7 @@ class Connection extends Thread
                             data = new byte[4];
 
                             DatagramPacket tempPack=receivePacket;
-                            System.out.println("111111111111111111111 "+ fullFileData[fullFileData.length - 1]);
+                            System.out.println("111111111111111111111 ");
                             curtAttempt=0;
                             int temp=receivingTimeout(data);
                             while(temp==0)
@@ -434,7 +436,7 @@ class Connection extends Thread
     private void writing(byte[] data)
     {
 
-        //System.out.println("data len="+data.length);
+
 
     /*byte[] newData = resize;
     resize = new byte[resize.length + data.length];

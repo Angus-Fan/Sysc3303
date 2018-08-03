@@ -21,10 +21,11 @@ public class ErrorSimConnection extends Thread{
     private boolean resend=false;
     private int modifiedPackIndex=2;
     private int delay=0;
-    //private String ipAddr;
+    private String addToSend;
     private InetAddress addressToSend=null;
-    public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay) {
+    public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay,String addToSend) {
         this.modified=modified;
+        this.addToSend=addToSend;
         this.modifiedPackIndex=modifiedPackIndex;
         this.delay=delay;
         try {
@@ -214,28 +215,49 @@ public class ErrorSimConnection extends Thread{
             {
                 if (modified == 412) {
                        data = badMode();
-                      System.out.println("WE WENT INTO 412");
+
                         modified=0;
                 }
             }
 
                 if (serversTID == 0) {
-                    try {
-                        addressToSend=InetAddress.getByName("134.117.59.205");
+                    if(addToSend.compareTo("")==0)
+                    {
+                        try {
+                            addressToSend=InetAddress.getLocalHost();
+                        }
+                        catch (Exception e)
+                        {System.out.println("SOMETHINGWRONG WITH THE IP!");}
                     }
-                    catch (Exception e)
-                    {System.out.println("SOMETHINGWRONG WITH THE IP!!");}
+                    else {
+                        try {
+                            addressToSend = InetAddress.getByName(addToSend);
+                        } catch (Exception e) {
+                            System.out.println("SOMETHINGWRONG WITH THE IP!!");
+                        }
+                    }
                     portToSend = 69;
                 }
                 else if (receivePacket.getPort()==clientsTID) {
                     System.out.println("sending to server");
                     portToSend = serversTID;
                     flip = false;
-                    try {
-                    addressToSend=InetAddress.getByName("134.117.59.205");
+                    if(addToSend.compareTo("")==0)
+                    {
+                        try {
+                            addressToSend=InetAddress.getLocalHost();
+                        }
+                        catch (Exception e)
+                        {System.out.println("SOMETHINGWRONG WITH THE IP!!!");}
                     }
-                    catch (Exception e)
-                    {System.out.println("SOMETHINGWRONG WITH THE IP!!");}
+                    else {
+                        try {
+                            addressToSend = InetAddress.getByName(addToSend);
+                        } catch (Exception e) {
+                            System.out.println("SOMETHINGWRONG WITH THE IP!!!!");
+                        }
+                    }
+
                 } else {
                     System.out.println("sending to client");
                     flip = true;
@@ -248,14 +270,14 @@ public class ErrorSimConnection extends Thread{
                 }
 
 
-            /*try {
+            try {
                 addressToSend= InetAddress.getLocalHost();
             }
             catch (Exception e)
             {}
 
 
-                try {
+               /* try {
                     addressToSend=InetAddress.getByName("134.117.59.205");
                 }
                 catch (Exception e)
