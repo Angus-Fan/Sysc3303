@@ -223,7 +223,7 @@ public class SimpleEchoClient{
           curtAttempt++;
           System.out.println("Resending the data block "+(blockNum+1));
           sending(createDataPacket(3,blockNum+1,fileData));
-          temp= receiving(data1);
+          temp= receivingTimeout(data1);
         }
         blockNum++;
         if(checkingError(data1))
