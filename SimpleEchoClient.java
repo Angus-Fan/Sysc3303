@@ -30,13 +30,11 @@ public class SimpleEchoClient{
   {
 
     try {
-      // Construct a datagram socket and bind it to any available
-      // port on the local host machine. This socket will be used to
-      // send and receive UDP Datagram packets.
+      
       sendReceiveSocket = new DatagramSocket();
 
 
-    } catch (SocketException se) {   // Can't create the socket.
+    } catch (SocketException se) {   
       se.printStackTrace();
       System.exit(1);
     }
@@ -56,26 +54,13 @@ public class SimpleEchoClient{
     byte data[] = new byte[516];
 
     int dataSize= firstReceive(data);
-    /*curtAttempt=0;
-    while(dataSize==-1)
-    {
-      if(curtAttempt>=maxAttempt)
-      {
-        System.out.println("Connection lost, client shuts down");
-        close();
-        return;
-      }
-      curtAttempt++;
-      System.out.println("Resending the request");
-      sending(msg);
-      dataSize= receivingTimeout(data);
-    }*/
+    
 
-    while(dataSize==516)
+    while(receivePacket.getData().length==516)
     {
 
       if(receivePacket.getData()[1]==(byte)5) {
-        System.out.println(new String(receivePacket.getData(), 4, dataSize-5));
+        System.out.println("Data Received: " + new String(receivePacket.getData(), 4, dataSize-5));
         break;
       }
 
@@ -145,14 +130,7 @@ public class SimpleEchoClient{
     byte[] fileData  = new byte[512];
     System.out.println("Reading file from: "+(path+fileName));
     try {
-      /*is = new FileInputStream((path+fileName));
-      int    bytesRead = is.read(fileData);
-      while(bytesRead != -1) {
-        numPack++;
-        fileData = new byte[512];
-        bytesRead = is.read(fileData);
-      }
-      is.close();*/
+      
 
 
       File file = new File(path + fileName);
@@ -178,20 +156,7 @@ public class SimpleEchoClient{
 
       // resend RQ when timeout
       int temp=firstReceive(data1);
-      /*curtAttempt=0;
-      while(temp==-1)
-      {
-        if(curtAttempt>=maxAttempt)
-        {
-          System.out.println("Connection lost, client shuts down");
-          close();
-          return;
-        }
-        curtAttempt++;
-        System.out.println("Resending the request");
-        sending(msg);
-        temp= receiving(data1);
-      }*/
+      
 
 
 
@@ -223,7 +188,7 @@ public class SimpleEchoClient{
           curtAttempt++;
           System.out.println("Resending the data block "+(blockNum+1));
           sending(createDataPacket(3,blockNum+1,fileData));
-          temp= receivingTimeout(data1);
+          temp= receiving(data1);
         }
         blockNum++;
         if(checkingError(data1))
@@ -294,11 +259,7 @@ public class SimpleEchoClient{
     {
       temp[i+4]=data[i];
     }
-    System.out.println("Create packet's packet = ");
-    for(int x = 0; x<temp.length;x++) {
-      System.out.print((char)temp[x]);
-    }
-    System.out.println("");
+    
     return temp;
 
   }
@@ -379,7 +340,7 @@ public class SimpleEchoClient{
 
   private boolean writting(byte[] data)
   {
-    System.out.println("data len="+data.length);
+    System.out.println("Length of the file is: "+data.length);
     byte[] newData = resize;
     resize = new byte[resize.length + data.length];
     System.arraycopy(newData, 0, resize, 0, newData.length);
@@ -479,7 +440,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data= " + newdata.length);
+     
 
 
       if (hostPort == 0)
@@ -495,7 +456,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data(duppack!!)= " + newdata.length);
+      System.out.println("Duplicate Packet Received");
 
 
 
@@ -538,7 +499,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data= " + newdata.length);
+     
 
 
       if (hostPort == 0)
@@ -554,7 +515,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data(duppack!!)= " + newdata.length);
+      System.out.println("Duplicate Packet Received");
 
 
 
@@ -592,7 +553,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data= " + newdata.length);
+      
 
 
       if (hostPort == 0)
@@ -608,7 +569,7 @@ public class SimpleEchoClient{
         newdata[i] = data1[i];
       }
       data1 = newdata;
-      System.out.println("new data(duppack!!)= " + newdata.length);
+      System.out.println("Duplicate Packet Received");
 
 
 
@@ -627,10 +588,9 @@ public class SimpleEchoClient{
   }
   private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
     System.out.println("Client: Packet received:");
-    //System.out.println("From host: " + pack.getAddress());
-    //System.out.println("Host port: " + pack.getPort());
+    
     int len = getLen(pack);
-    //System.out.println("Length: " + len);
+    
     System.out.print("Containing: ");
     // Form a String from the byte array.
     String received = new String(dataByte,0,len);
