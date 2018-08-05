@@ -213,15 +213,13 @@ public class ErrorSimConnection extends Thread{
                         data[3] = (byte) 9;
                     }
                 }
-            }
-            else
-            {
-                if (modified == 412) {
-                       data = badMode();
+                else if (modified == 412) {
+                    data = badMode();
 
-                        modified=0;
-                }
+                     modified=0;
+             }
             }
+            
 
                 if (serversTID == 0) {
                     if(addToSend.compareTo("")==0)
@@ -303,6 +301,7 @@ public class ErrorSimConnection extends Thread{
                 {
                     System.out.print("dalay RQ for "+delay+" seconds");
                     delay(delay);
+                    modified=0;
                 }
             }
             if(modified==622)   //delay data block
@@ -315,6 +314,7 @@ public class ErrorSimConnection extends Thread{
                         {
                             System.out.print("dalay Data block "+modifiedPackIndex+" for "+delay+" seconds");
                             delay(delay);
+                            modified=0;
                         }
                     }
                     else if(modifiedPackIndex<10)
@@ -322,7 +322,7 @@ public class ErrorSimConnection extends Thread{
                         if(data[3]==modifiedPackIndex) {
                             System.out.print("dalay Data block " + modifiedPackIndex + " for "+delay+" seconds.");
                             delay(delay);
-
+                            modified=0;
                         }
                     }
                 }
@@ -337,6 +337,7 @@ public class ErrorSimConnection extends Thread{
                         {
                             System.out.print("dalay ACK "+modifiedPackIndex+" for "+delay+" seconds");
                             delay(delay);
+                            modified=0;
                         }
                     }
                     else if(modifiedPackIndex<10)
@@ -344,6 +345,7 @@ public class ErrorSimConnection extends Thread{
                         if(data[3]==modifiedPackIndex) {
                             System.out.print("dalay ACK " + modifiedPackIndex + " for "+delay+" seconds");
                             delay(delay);
+                            modified=0;
                         }
                     }
                 }
