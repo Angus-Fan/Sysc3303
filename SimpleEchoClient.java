@@ -71,7 +71,7 @@ public class SimpleEchoClient{
       dataSize= receivingTimeout(data);
     }*/
 
-    while(receivePacket.getData().length==516)
+    while(dataSize==516)
     {
 
       if(receivePacket.getData()[1]==(byte)5) {

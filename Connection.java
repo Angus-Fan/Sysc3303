@@ -131,6 +131,10 @@ class Connection extends Thread
                     //byte[] fileData = new byte[512];
 
                     fileIO(1, null);
+                    
+                    
+                    
+                    
                     if(errorCode!=8) {
                         System.out.println("Connection" + connectionID + " shuts down");
                         return;
@@ -199,7 +203,7 @@ class Connection extends Thread
                         } else {
                             System.out.println("sending block num " + blockNum);
                             sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]));
-
+                            System.out.println("file = "+new String(fullFileData[blockNum-1]));
                             data = new byte[4];
                             System.out.println("blockCount= "+blockCount);
 
@@ -329,14 +333,15 @@ class Connection extends Thread
 
             try {
                 is = new FileInputStream( (path + fileName));
-                for(int i =0;i<numPack-1;i++){
+                for(int i =0;i<numPack;i++){
                     fileData = new byte[512];
                     is.read(fileData);
                     fullFileData[i]=fileData;
+                    
                 }
                 fileData = new byte[finalPacket];
                 is.read(fileData);
-                fullFileData[numPack-1]=fileData;
+                fullFileData[fullFileData.length-1]=fileData;
                 is.close();
 
             }
