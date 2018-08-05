@@ -25,7 +25,6 @@ public class ErrorSimConnection extends Thread{
     private InetAddress addressToSend=null;
     public ErrorSimConnection(DatagramPacket pack,int modified,int modifiedPackIndex,int delay,String addToSend) {
         this.modified=modified;
-        System.out.println("addToSend= "+addToSend);
         this.addToSend=addToSend;
         this.modifiedPackIndex=modifiedPackIndex;
         this.delay=delay;
@@ -51,7 +50,7 @@ public class ErrorSimConnection extends Thread{
             newdata[i]=data[i];
         }
         data=newdata;
-        System.out.println("data len= "+data.length);
+        System.out.println("Packet Length is: " +data.length);
 
         printInfoReceived(receivePacket,data);
         System.out.println();
@@ -229,14 +228,14 @@ public class ErrorSimConnection extends Thread{
                             addressToSend=InetAddress.getLocalHost();
                         }
                         catch (Exception e)
-                        {System.out.println("SOMETHINGWRONG WITH THE IP!");}
+                        {System.out.println("There is an error with the IP address");}
                     }
                     else {
                         try {
-                            System.out.println("SENDING TO "+addToSend);
+                            System.out.println("Sending to IP address: "+addToSend);
                             addressToSend = InetAddress.getByName(addToSend);
                         } catch (Exception e) {
-                            System.out.println("SOMETHINGWRONG WITH THE IP!!");
+                            System.out.println("There is an error with the IP address");
                         }
                     }
                     portToSend = 69;
@@ -251,13 +250,13 @@ public class ErrorSimConnection extends Thread{
                             addressToSend=InetAddress.getLocalHost();
                         }
                         catch (Exception e)
-                        {System.out.println("SOMETHINGWRONG WITH THE IP!!!");}
+                        {System.out.println("There is an error with the IP address");}
                     }
                     else {
                         try {
                             addressToSend = InetAddress.getByName(addToSend);
                         } catch (Exception e) {
-                            System.out.println("SOMETHINGWRONG WITH THE IP!!!!");
+                            System.out.println("There is an error with the IP address");
                         }
                     }
 
@@ -366,7 +365,7 @@ public class ErrorSimConnection extends Thread{
                 } else {
                     try {
                         if (resend) {
-                            System.out.println("duplicate package send!!");
+                            System.out.println("duplicate package sent");
                             socket.send(sendPacket);
                             delay(delay);
                             resend = false;
@@ -378,7 +377,7 @@ public class ErrorSimConnection extends Thread{
                         System.exit(1);
                     }
                 }
-                System.out.println("InterHost: packet sent");
+                System.out.println("ErrorSimulator: packet sent");
                 if (data[1] == (byte) 0) {
 
                     break;
@@ -404,7 +403,7 @@ public class ErrorSimConnection extends Thread{
                 Thread.sleep( 1000);
 
             }
-            System.out.println("done");
+            System.out.println("Thread awake");
         }
         catch (InterruptedException e)
         {}
@@ -437,12 +436,11 @@ public class ErrorSimConnection extends Thread{
     //IO DISPLAY FUNCTIONS
     private void printInfoToSend(DatagramPacket pack) {
         System.out.println("InterHost: Sending packet:");
-        //  System.out.println("To host: " + pack.getAddress());
-        // System.out.println("Destination host port: " + pack.getPort());
+
         int len = getLen(pack);
-        // System.out.println("Length: " + len);
+      
         System.out.print("Containing: ");
-        //System.out.println(new String(pack.getData(),0,len)); // or could print "s"
+    
         for(int x = 0;x<len;x++) {
             System.out.print(pack.getData()[x]);
         }
@@ -450,15 +448,13 @@ public class ErrorSimConnection extends Thread{
     }
     private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
         System.out.println("InterHost: Packet received:");
-        //   System.out.println("From host: " + pack.getAddress());
-        // System.out.println("Host port: " + pack.getPort());
+     
         int len = getLen(pack);
-        //System.out.println("Length: " + len);
+      
         System.out.print("Containing: ");
-        // Form a String from the byte array.
+      
 
-        // System.out.println(received);
-        //System.out.println("Byte array: " + pack.getData());
+        
         System.out.print("Package in bytes: ");
         for(int x = 0;x<len;x++) {
             System.out.print(pack.getData()[x]);
@@ -480,10 +476,8 @@ public class ErrorSimConnection extends Thread{
         badOpCodeBytes = receivePacket.getData();
         badOpCodeBytes[0] = 1;
         badOpCodeBytes[1] = 1;
-        System.out.println("OPCODE MODIFIED");/*
-        for(int x = 0;x<badOpCodeBytes.length;x++) {
-            System.out.print(badOpCodeBytes[x]);
-        }*/
+        System.out.println("OPCODE MODIFIED");
+     
         return badOpCodeBytes;
 
     }
