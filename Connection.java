@@ -51,13 +51,6 @@ class Connection extends Thread
     }
     public void run()
     {
-        /*try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e ) {
-            e.printStackTrace();
-            System.exit(1);
-        }*/
-
 
         System.out.println("Connection"+connectionID+" port= "+sendReceiveSocket.getLocalPort());
         if(errorSimulatorPort==0)
@@ -94,7 +87,7 @@ class Connection extends Thread
 
                     if(receivePacket.getLength()<516)
                     {
-                        //System.out.println("Connection" + connectionID + " shuts down");
+                        
                         break;
                     }
                 }
@@ -131,10 +124,6 @@ class Connection extends Thread
                     //byte[] fileData = new byte[512];
 
                     fileIO(1, null);
-                    
-                    
-                    
-                    
                     if(errorCode!=8) {
                         System.out.println("Connection" + connectionID + " shuts down");
                         return;
@@ -203,9 +192,9 @@ class Connection extends Thread
                         } else {
                             System.out.println("sending block num " + blockNum);
                             sending(createDataPacket(3, blockNum, fullFileData[blockNum-1]));
-                            System.out.println("file = "+new String(fullFileData[blockNum-1]));
+
                             data = new byte[4];
-                            System.out.println("blockCount= "+blockCount);
+                            //System.out.println("blockCount= "+blockCount);
 
 
                             DatagramPacket tempPack=receivePacket;
@@ -223,7 +212,7 @@ class Connection extends Thread
                                     return;
                                 }
                                 temp=receivingTimeout(data);
-                                System.out.println("44444444444");
+                                
                             }
                             if(temp==-1)
                                 toBreak=true;
@@ -240,19 +229,8 @@ class Connection extends Thread
                             {
                                 System.out.println("duplicate Ack!!!");
                                 temp=receivingTimeout(data);
-                                /*
-                                System.out.println("WE PASSED TIMEOUT1");
-                                while(temp==0) {
-                                    System.out.println("WE ENETERED TIMEOUT temp 0");
-                                    temp=receivingTimeout(data);
-                                }
-                                if(receivingTimeout(data)==-1) {
-                                     = -1");
-                                    break;
-                                }
-                                System.out.println("END OF WHILE");*/
                             }
-                            //System.out.println("duplicate Ack!!!:  "+data[0]+data[1]+data[2]+data[3]);
+                            
 
 
 
@@ -337,11 +315,10 @@ class Connection extends Thread
                     fileData = new byte[512];
                     is.read(fileData);
                     fullFileData[i]=fileData;
-                    
                 }
                 fileData = new byte[finalPacket];
                 is.read(fileData);
-                fullFileData[fullFileData.length-1]=fileData;
+                fullFileData[numPack-1]=fileData;
                 is.close();
 
             }
@@ -349,7 +326,7 @@ class Connection extends Thread
             {
                 if(e.toString().substring(e.toString().length()-42).compareTo("The system cannot find the file specified)")==0)
                 {
-                    //System.out.println("ERROR:File not found!");
+                   
                     errorMsg="ERROR:File not found!";
                     System.out.println("Connection" + connectionID + " gets an "+errorMsg);
                     errorCode=1;
@@ -396,11 +373,7 @@ class Connection extends Thread
         {
             temp[i+4]=data[i];
         }
-    /*System.out.println("Creating packet = ");
-    for(int x = 0; x<temp.length;x++) {
-      System.out.print((char)temp[x]);
-    }
-    System.out.println("");*/
+
         return temp;
 
     }
@@ -432,7 +405,7 @@ class Connection extends Thread
             e.printStackTrace();
             System.exit(1);
         }
-        System.out.println("Connection"+connectionID+" sending to "+errorSimulatorPort);
+       
 
     }
     private void sending(byte[] data,DatagramPacket pack)
@@ -448,7 +421,7 @@ class Connection extends Thread
             e.printStackTrace();
             System.exit(1);
         }
-        System.out.println("Connection"+connectionID+" sending to "+errorSimulatorPort);
+       
 
     }
     private void writing(byte[] data)
@@ -473,7 +446,7 @@ class Connection extends Thread
         {
             if(e.toString().substring(e.toString().length()-17).compareTo("Access is denied)")==0)
             {
-                //System.out.println("ERROR:Access is denied!!");
+                
                 errorMsg="ERROR:Access is denied!!";
                 System.out.println("Connection" + connectionID + " gets an "+errorMsg);
                 data=new byte[5+errorMsg.getBytes().length];
@@ -495,7 +468,7 @@ class Connection extends Thread
         catch(IOException e) {
             if(e.toString().substring(e.toString().length()-37).compareTo("There is not enough space on the disk")==0)
             {
-                //System.out.println("ERROR: There is not enough space on the disk");
+                
                 errorMsg="ERROR:There is not enough space on the disk";
                 System.out.println("Connection" + connectionID + " gets an "+errorMsg);
                 data=new byte[5+errorMsg.getBytes().length];
@@ -526,11 +499,11 @@ class Connection extends Thread
     {
 
         receivePacket = new DatagramPacket(data, data.length);
-        //sendReceiveSocket.receive(receivePacket);
+        
         try {
             sendReceiveSocket.setSoTimeout(timeout);
             sendReceiveSocket.receive(receivePacket);
-            //System.out.println("we opened the receivePort");
+           
         }
         catch(SocketTimeoutException e) {
             System.out.println("TIME OUT!");
@@ -569,7 +542,7 @@ class Connection extends Thread
             return -1;
         }
         return 1;
-        //System.out.println("data receivied");
+        
 
     }
     private int receiving (byte[] data)
@@ -614,7 +587,7 @@ class Connection extends Thread
             return -1;
         }
         return 1;
-        //System.out.println("data receivied");
+       
 
     }
 
