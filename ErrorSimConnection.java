@@ -351,7 +351,7 @@ public class ErrorSimConnection extends Thread{
             }
 
                 // Send the datagram packet to the client via the send socket.
-                System.out.println("modified= " + modified + " usingFakeSocket=" + usingFakeSocket);
+               // System.out.println("modified= " + modified + " usingFakeSocket=" + usingFakeSocket);
                 if (modified == 5 && usingFakeSocket >= 2) {
                     System.out.println("Using the fake Socket");
                     try {

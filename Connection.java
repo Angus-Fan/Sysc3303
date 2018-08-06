@@ -26,7 +26,7 @@ class Connection extends Thread
     private boolean dupPacket = false;
     private int hostPort=0;
     private boolean duplicateRQ=false;
-    private int timeout=20000;
+    private int timeout=5000;
     private int maxAttempt=5;
     private int curtAttempt=0;
     public Connection(DatagramPacket packet, int connectionID,String path)
@@ -66,7 +66,7 @@ class Connection extends Thread
                 }
                 else if (getOpcode() == 3) {
 
-                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]);
+                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]+"(Length ="+receivePacket.getLength()+"): "+new String(data));
                     if(!dupPacket) {
                         byte[] toFile = new byte[data.length - 4];
                         for (int i = 0; i < data.length - 4; i++)
@@ -79,6 +79,10 @@ class Connection extends Thread
                             System.out.println("Connection" + connectionID + " shuts down");
                             return;
                         }
+                    }
+                    else
+                    {
+                        System.out.println("Connection" + connectionID + " gets duplicate data package!");
                     }
                     constructArray();
                     if(!dupPacket)
@@ -124,6 +128,7 @@ class Connection extends Thread
                     //byte[] fileData = new byte[512];
 
                     fileIO(1, null);
+
                     if(errorCode!=8) {
                         System.out.println("Connection" + connectionID + " shuts down");
                         return;
@@ -303,22 +308,29 @@ class Connection extends Thread
 
 
             if(finalPacket==0)
+                numPack++;
+               // fullFileData=new byte[numPack+1][512];
 
-                fullFileData=new byte[numPack+1][512];
-
-            else
+            //else
                 fullFileData=new byte[numPack][512];
 
             try {
                 is = new FileInputStream( (path + fileName));
-                for(int i =0;i<numPack;i++){
+                for(int i =0;i<numPack-1;i++){
                     fileData = new byte[512];
                     is.read(fileData);
+                    //System.out.println("file1= "+new String(fileData));
                     fullFileData[i]=fileData;
                 }
+                //System.out.println("file2= "+new String(fullFileData[0]));
+                System.out.println("numPack= "+numPack);
                 fileData = new byte[finalPacket];
                 is.read(fileData);
-                fullFileData[numPack-1]=fileData;
+                /*if(finalPacket==0)
+                    fullFileData[numPack]=fileData;
+                else*/
+                    fullFileData[numPack-1]=fileData;
+                //System.out.println("file3= "+new String(fullFileData[0]));
                 is.close();
 
             }

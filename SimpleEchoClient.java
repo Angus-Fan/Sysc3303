@@ -56,7 +56,7 @@ public class SimpleEchoClient{
     int dataSize= firstReceive(data);
     
 
-    while(receivePacket.getData().length==516)
+    while(dataSize==516)
     {
 
       if(receivePacket.getData()[1]==(byte)5) {
@@ -188,7 +188,7 @@ public class SimpleEchoClient{
           curtAttempt++;
           System.out.println("Resending the data block "+(blockNum+1));
           sending(createDataPacket(3,blockNum+1,fileData));
-          temp= receiving(data1);
+          temp= receivingTimeout(data1);
         }
         blockNum++;
         if(checkingError(data1))
