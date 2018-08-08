@@ -169,7 +169,8 @@ public class SimpleEchoServer {
         SimpleEchoServer c = new SimpleEchoServer();
         Scanner keyboard = new Scanner(System.in);
         System.out.println("Type 1 to be in normal mode or 2 to be in Verbose mode");
-        if(keyboard.nextInt() == 1)
+        Scanner keyboard2 = new Scanner(System.in);
+        if(keyboard2.nextInt() == 1)
             mode = true;
         else
             mode = false;
