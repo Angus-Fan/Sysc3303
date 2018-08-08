@@ -29,8 +29,10 @@ class Connection extends Thread
     private int timeout=5000;
     private int maxAttempt=5;
     private int curtAttempt=0;
-    public Connection(DatagramPacket packet, int connectionID,String path)
+    private boolean mode;
+    public Connection(DatagramPacket packet, int connectionID,String path,boolean mode)
     {
+        this.mode = mode;
         System.out.println("Connection"+connectionID+" been created!");
         this.connectionID=connectionID;
         this.hostPort=packet.getPort();
@@ -51,8 +53,9 @@ class Connection extends Thread
     }
     public void run()
     {
-
-        System.out.println("Connection"+connectionID+" port= "+sendReceiveSocket.getLocalPort());
+        if(!mode) {
+            System.out.println("Connection" + connectionID + " port= " + sendReceiveSocket.getLocalPort());
+        }
         if(errorSimulatorPort==0)
             errorSimulatorPort=receivePacket.getPort();
         errorCheck();
@@ -65,8 +68,9 @@ class Connection extends Thread
                     break;
                 }
                 else if (getOpcode() == 3) {
-
-                    System.out.println("Connection" + connectionID + " received data package "+data[2]+data[3]+"(Length ="+receivePacket.getLength()+"): "+new String(data));
+                    if(!mode) {
+                        System.out.println("Connection" + connectionID + " received data package " + data[2] + data[3] + "(Length =" + receivePacket.getLength() + "): " + new String(data));
+                    }
                     if(!dupPacket) {
                         byte[] toFile = new byte[data.length - 4];
                         for (int i = 0; i < data.length - 4; i++)
@@ -82,7 +86,9 @@ class Connection extends Thread
                     }
                     else
                     {
-                        System.out.println("Connection" + connectionID + " gets duplicate data package!");
+                        if(!mode) {
+                            System.out.println("Connection" + connectionID + " gets duplicate data package!");
+                        }
                     }
                     constructArray();
                     if(!dupPacket)
@@ -97,7 +103,9 @@ class Connection extends Thread
                 }
                 else if(dupPacket)
                 {
-                    System.out.println("duplicate package!");
+                    if(!mode) {
+                        System.out.println("duplicate package!");
+                    }
 
                     if(receiving(data)==-1)
                         break;
@@ -105,15 +113,20 @@ class Connection extends Thread
                     continue;
                 }
                 else if (getOpcode() == 5) {
-                    System.out.println("Connection" + connectionID + " gets an error from client");
-                    System.out.println(new String(data).substring(4,data.length-1));
-                    System.out.println("Connection"+connectionID+" shuts down");
+                    if(!mode) {
+                        System.out.println("Connection" + connectionID + " gets an error from client");
+                        System.out.println(new String(data).substring(4, data.length - 1));
+                    }
+                        System.out.println("Connection" + connectionID + " shuts down");
+
                     sendReceiveSocket.close();
                     return;
                 }
                 else if (getOpcode() == 2)    //Writing request
                 {
-                    System.out.println("Connection" + connectionID + " received write request");
+                    if(!mode) {
+                        System.out.println("Connection" + connectionID + " received write request");
+                    }
                     duplicateRQ=true;
                     blockCount = 0;
                     constructArray();
@@ -122,7 +135,9 @@ class Connection extends Thread
                 } else if (getOpcode() == 1)   //Reading request
                 {
                     //int numPack;    //finding out how many time need to send the whole file
-                    System.out.println("Connection" + connectionID + " received read request");
+                    if(!mode) {
+                        System.out.println("Connection" + connectionID + " received read request");
+                    }
                     duplicateRQ=true;
 
                     //byte[] fileData = new byte[512];
@@ -130,7 +145,9 @@ class Connection extends Thread
                     fileIO(1, null);
 
                     if(errorCode!=8) {
-                        System.out.println("Connection" + connectionID + " shuts down");
+
+                            System.out.println("Connection" + connectionID + " shuts down");
+
                         return;
                     }
 
@@ -139,7 +156,9 @@ class Connection extends Thread
                     while (true) {
                         while ( dupPacket)
                         {
-                            System.out.println("duplicate package!!");
+                            if(!mode) {
+                                System.out.println("duplicate package!!");
+                            }
                             int temp=receivingTimeout(data);
                             while(temp==0) {
                                 temp=receivingTimeout(data);
@@ -149,7 +168,9 @@ class Connection extends Thread
                             continue;
                         }
                         if (blockNum  == fullFileData.length) {
-                            System.out.println("sending block num " + blockNum);
+                            if(!mode) {
+                                System.out.println("sending block num " + blockNum);
+                            }
                             sending(createDataPacket(3, blockNum, fullFileData[fullFileData.length - 1]));
                             data = new byte[4];
 
@@ -184,14 +205,18 @@ class Connection extends Thread
                             }
                             if(data[1]==(byte)5)
                             {
-                                System.out.println("Connection" + connectionID + " gets an error from client");
-                                System.out.println(new String(data).substring(4,data.length-1));
+                                if(!mode) {
+                                    System.out.println("Connection" + connectionID + " gets an error from client");
+                                    System.out.println(new String(data).substring(4, data.length - 1));
+                                }
                                 System.out.println("Connection"+connectionID+" shuts down");
                                 sendReceiveSocket.close();
                                 return;
                             }
                             else {
-                                System.out.println("Connection" + connectionID + " received ACK"+data[2]+data[3]);
+                                if(!mode) {
+                                    System.out.println("Connection" + connectionID + " received ACK" + data[2] + data[3]);
+                                }
                                 break;
                             }
                         } else {
@@ -232,7 +257,9 @@ class Connection extends Thread
 
                             while(dupPacket)
                             {
-                                System.out.println("duplicate Ack!!!");
+                                if(!mode) {
+                                    System.out.println("duplicate Ack!!!");
+                                }
                                 temp=receivingTimeout(data);
                             }
                             
@@ -250,13 +277,17 @@ class Connection extends Thread
                             }
                             if(data[1]==(byte)5)
                             {
-                                System.out.println("Connection" + connectionID + " gets an error from client");
+                                if(!mode) {
+                                    System.out.println("Connection" + connectionID + " gets an error from client");
+                                }
                                 System.out.println("Connection"+connectionID+" shuts down");
                                 sendReceiveSocket.close();
                                 return;
                             }
                             else
-                                System.out.println("Connection" + connectionID + " received ACK"+data[2]+data[3]);
+                            if(!mode) {
+                                System.out.println("Connection" + connectionID + " received ACK" + data[2] + data[3]);
+                            }
                         }
                     }
                     if(toBreak)
@@ -275,7 +306,9 @@ class Connection extends Thread
         }
         else
         {
-            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+            }
             data=new byte[5+errorMsg.getBytes().length];
             data[0]=(byte)0;
             data[1]=(byte)5;
@@ -323,7 +356,9 @@ class Connection extends Thread
                     fullFileData[i]=fileData;
                 }
                 //System.out.println("file2= "+new String(fullFileData[0]));
-                System.out.println("numPack= "+numPack);
+                if(!mode) {
+                    System.out.println("numPack= " + numPack);
+                }
                 fileData = new byte[finalPacket];
                 is.read(fileData);
                 /*if(finalPacket==0)
@@ -340,7 +375,9 @@ class Connection extends Thread
                 {
                    
                     errorMsg="ERROR:File not found!";
-                    System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                    if(!mode) {
+                        System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+                    }
                     errorCode=1;
                     data=new byte[5+errorMsg.getBytes().length];
                     data[0]=(byte)0;
@@ -407,7 +444,9 @@ class Connection extends Thread
     private void sending(byte[] data)
     {
         String str = new String(data,0,data.length);
-        System.out.println("Connection"+connectionID+" sending package= "+str);
+        if(!mode) {
+            System.out.println("Connection" + connectionID + " sending package= " + str);
+        }
 
         try {
             sendPacket = new DatagramPacket(data, data.length,
@@ -423,7 +462,9 @@ class Connection extends Thread
     private void sending(byte[] data,DatagramPacket pack)
     {
         String str = new String(data,0,data.length);
-        System.out.println("Connection"+connectionID+" sending package= "+str);
+        if(!mode) {
+            System.out.println("Connection" + connectionID + " sending package= " + str);
+        }
 
         try {
             sendPacket = new DatagramPacket(data, data.length,
@@ -460,7 +501,9 @@ class Connection extends Thread
             {
                 
                 errorMsg="ERROR:Access is denied!!";
-                System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                if(!mode) {
+                    System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+                }
                 data=new byte[5+errorMsg.getBytes().length];
                 data[0]=(byte)0;
                 data[1]=(byte)5;
@@ -482,7 +525,9 @@ class Connection extends Thread
             {
                 
                 errorMsg="ERROR:There is not enough space on the disk";
-                System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+                if(!mode) {
+                    System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+                }
                 data=new byte[5+errorMsg.getBytes().length];
                 data[0]=(byte)0;
                 data[1]=(byte)5;
@@ -527,11 +572,15 @@ class Connection extends Thread
         }
         if(receivePacket.getPort()!=errorSimulatorPort)
         {
-            System.out.println("Connection" + connectionID + " gets an UNKNOWN TID "+receivePacket.getPort());
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets an UNKNOWN TID " + receivePacket.getPort());
+            }
         }
         if((data[1]==1||data[1]==2)&&duplicateRQ&&data[0]==0)
         {
-            System.out.println("Connection" + connectionID + " gets a duplicate request");
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets a duplicate request");
+            }
 
             return receiving(data);
         }
@@ -540,8 +589,9 @@ class Connection extends Thread
             storeOpcode();
         if(errorCode!=8)
         {
-
-            System.out.println("Connection" + connectionID + " gets an "+errorMsg);
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+            }
             data=new byte[5+errorMsg.getBytes().length];
             data[0]=(byte)0;
             data[1]=(byte)5;
@@ -572,11 +622,15 @@ class Connection extends Thread
         }
         if(receivePacket.getPort()!=errorSimulatorPort)
         {
-            System.out.println("Connection" + connectionID + " gets an UNKNOWN TID "+receivePacket.getPort());
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets an UNKNOWN TID " + receivePacket.getPort());
+            }
         }
         if((data[1]==1||data[1]==2)&&duplicateRQ&&data[0]==0)
         {
-            System.out.println("Connection" + connectionID + " gets a duplicate request");
+            if(!mode) {
+                System.out.println("Connection" + connectionID + " gets a duplicate request");
+            }
 
             return receiving(data);
         }

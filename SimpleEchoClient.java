@@ -26,6 +26,7 @@ public class SimpleEchoClient{
   private int curtAttempt=0;
   private byte[] previousPacket = new byte[4];
   private boolean dupPacket = false;
+  private static boolean mode=true; //true = normal
   public SimpleEchoClient()
   {
 
@@ -46,7 +47,9 @@ public class SimpleEchoClient{
     if(!checkAccess())
       return;
     hostPort = 0;
-    System.out.println("Client: sending a packet containing:\n" );
+    if(!mode) {
+      System.out.println("Client: sending a packet containing:\n");
+    }
     constructArray(1,fileName,"netascii");
     sending(msg);
     System.out.println("Client: Packet sent.\n");
@@ -151,17 +154,21 @@ public class SimpleEchoClient{
 
       File file = new File(path + fileName);
       int size = (int) file.length();
-      System.out.println("File size: "+size);
+      if(!mode) {
+        System.out.println("File size: " + size);
+      }
       numPack = (int) Math.ceil(size / 512.0);
       int finalPacket = 0;
       if (numPack != 0)
         finalPacket = size % 512;
 
-
-      System.out.println("Packages need to send "+numPack);
-
+      if(!mode) {
+        System.out.println("Packages need to send " + numPack);
+      }
       is = new FileInputStream((path+fileName));
-      System.out.println("Client: sending a packet containing:\n");
+      if(!mode) {
+        System.out.println("Client: sending a packet containing:\n");
+      }
       constructArray(2,fileName,"netascii");
       sending(msg);
 
@@ -374,7 +381,9 @@ public class SimpleEchoClient{
 
   private boolean writting(byte[] data)
   {
-    System.out.println("Length of the file is: "+data.length);
+    if(!mode) {
+      System.out.println("Length of the file is: " + data.length);
+    }
     byte[] newData = resize;
     resize = new byte[resize.length + data.length];
     System.arraycopy(newData, 0, resize, 0, newData.length);
@@ -615,23 +624,27 @@ public class SimpleEchoClient{
   private void printInfoToSend(DatagramPacket pack) {
 
     int len = getLen(pack);
-    System.out.println("Client: Sending packet:");
-    System.out.print("Containing: ");
-    System.out.println(new String(pack.getData(),0,len)); // or could print "s"
+    if(!mode) {
+      System.out.println("Client: Sending packet:");
+      System.out.print("Containing: ");
+      System.out.println(new String(pack.getData(), 0, len));
+    }// or could print "s"
     System.out.println("Sending done!");
   }
   private void printInfoReceived(DatagramPacket pack,byte[] dataByte) {
     System.out.println("Client: Packet received:");
     
     int len = getLen(pack);
-    
-    System.out.print("Containing: ");
-    // Form a String from the byte array.
-    String received = new String(dataByte,0,len);
-    System.out.println(received);
-    System.out.println();
-    for(int x = 0;x<len;x++) {
-      System.out.print(pack.getData()[x]);
+
+    if(!mode) {
+      System.out.print("Containing: ");
+      // Form a String from the byte array.
+      String received = new String(dataByte, 0, len);
+      System.out.println(received);
+      System.out.println();
+      for (int x = 0; x < len; x++) {
+        System.out.print(pack.getData()[x]);
+      }
     }
     System.out.println();
 
@@ -755,6 +768,7 @@ public class SimpleEchoClient{
   }
 
 
+
   private void close()
   {
     sendReceiveSocket.close();
@@ -776,6 +790,11 @@ public class SimpleEchoClient{
     //c.sendReadAndReceive();
 
     Scanner keyboard = new Scanner(System.in);
+    System.out.println("Type 1 to be in normal mode or 2 to be in Verbose mode");
+    if(keyboard.nextInt() == 1)
+      mode = true;
+    else
+      mode = false;
     System.out.println("Type 1 to close the client, 2 to read or 3 to write");
 
     int temp=keyboard.nextInt();

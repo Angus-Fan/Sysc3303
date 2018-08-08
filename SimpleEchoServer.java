@@ -19,6 +19,7 @@ public class SimpleEchoServer {
     private String path="C:\\Users\\michaelwang3\\Desktop\\server\\";
     private ArrayList<Connection> thread;
     private ShutDownThread shutDownThread;
+    private static boolean mode=true;
 
 
     class ShutDownThread extends Thread {
@@ -100,11 +101,15 @@ public class SimpleEchoServer {
 
         // Process the received datagram.
         System.out.println("Server: Packet received:");
-        System.out.println("From host: " + receivePacket.getAddress());
-        System.out.println("Host port: " + receivePacket.getPort());
         int len = receivePacket.getLength();
-        System.out.println("Length: " + len);
-        System.out.print("Containing: " );
+        if(!mode) {
+            System.out.println("From host: " + receivePacket.getAddress());
+            System.out.println("Host port: " + receivePacket.getPort());
+
+
+            System.out.println("Length: " + len);
+            System.out.print("Containing: ");
+        }
 
         // Form a String from the byte array.
         String received = new String(data,0,len);
@@ -112,7 +117,7 @@ public class SimpleEchoServer {
 
         if(!hostTID.contains(receivePacket.getPort())) {
             hostTID.add(receivePacket.getPort());
-            Connection connection = new Connection(receivePacket, connectionCount++, path);
+            Connection connection = new Connection(receivePacket, connectionCount++, path,mode);
             connection.start();
 
             thread.add(connection);
@@ -163,6 +168,11 @@ public class SimpleEchoServer {
     {
         SimpleEchoServer c = new SimpleEchoServer();
         Scanner keyboard = new Scanner(System.in);
+        System.out.println("Type 1 to be in normal mode or 2 to be in Verbose mode");
+        if(keyboard.nextInt() == 1)
+            mode = true;
+        else
+            mode = false;
         //ShutDownThread shutDownThread= new ShutDownThread();
         c.readFilePath(keyboard);
         //shutDownThread.start();
