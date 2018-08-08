@@ -53,8 +53,24 @@ public class SimpleEchoClient{
 
     byte data[] = new byte[516];
 
-    int dataSize= firstReceive(data);
-    
+    int dataSize;
+    int temp;
+
+    curtAttempt=0;
+    dataSize=receivingTimeout(data);
+    while(dataSize==-1)
+    {
+      if(curtAttempt>=maxAttempt)
+      {
+        System.out.println("Connection lost, client shuts down");
+        close();
+        return;
+      }
+      curtAttempt++;
+      System.out.println("Resending the request");
+      sending(msg);
+      dataSize= receivingTimeout(data);
+    }
 
     while(dataSize==516)
     {
@@ -155,8 +171,26 @@ public class SimpleEchoClient{
       byte data1[] = new byte[516];
 
       // resend RQ when timeout
-      int temp=firstReceive(data1);
-      
+      int temp;
+
+      curtAttempt=0;
+      temp=receivingTimeout(data1);
+      while(temp==-1)
+      {
+        if(curtAttempt>=maxAttempt)
+        {
+          System.out.println("Connection lost, client shuts down");
+          close();
+          return;
+        }
+        curtAttempt++;
+        System.out.println("Resending the request");
+        sending(msg);
+        temp= receivingTimeout(data1);
+      }
+
+
+
 
 
 
