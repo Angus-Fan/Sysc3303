@@ -202,10 +202,10 @@ public class ErrorSimulator{
                     //Scanner fieldScanner = new Scanner(System.in);
                     int partToSimulate = scan.nextInt();
                     if(partToSimulate==1) {
-                        System.out.println("Which block do you want the error to occur in ");
+                        //System.out.println("Which block do you want the error to occur in ");
                         //Scanner blockNumScanner = new Scanner(System.in);
                         modified=621;
-                        modifiedPackIndex = scan.nextInt();
+                        modifiedPackIndex = 0;
 
                         System.out.println("How long do you want to delay for ");
                         //Scanner delayScanner = new Scanner(System.in);
@@ -251,10 +251,10 @@ public class ErrorSimulator{
                    // Scanner fieldScanner = new Scanner(System.in);
                     int partToSimulate = scan.nextInt();
                     if(partToSimulate==1) {
-                        System.out.println("Which block do you want the error to occur in ");
+
                         //Scanner blockNumScanner = new Scanner(System.in);
 
-                        modifiedPackIndex = scan.nextInt();
+                        modifiedPackIndex =0;
                         modified=631;
                         System.out.println("How long do you want to delay for ");
                        // Scanner delayScanner = new Scanner(System.in);
