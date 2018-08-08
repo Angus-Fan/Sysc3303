@@ -331,6 +331,24 @@ class Connection extends Thread
             byte[] fileData;
             System.out.println("Reading file from: " + (path + fileName));
             File file = new File(path + fileName);
+
+            if(!file.canRead())
+            {
+                System.out.println("Cannot read the file from: "+(path+fileName));
+                errorMsg="ERROR:Access is denied!!";
+                if(!mode) {
+                    System.out.println("Connection" + connectionID + " gets an " + errorMsg);
+                }
+                data=new byte[5+errorMsg.getBytes().length];
+                data[0]=(byte)0;
+                data[1]=(byte)5;
+                data[2]=(byte)0;
+                data[3]=(byte)2;
+                data[data.length-1]=(byte)0;
+                System.arraycopy(errorMsg.getBytes(),0,data,4,errorMsg.getBytes().length);
+                sending(data);
+                errorCode=10;
+            }
             int size = (int) file.length();
             System.out.println("File size: "+size);
             numPack = (int) Math.ceil(size / 512.0);

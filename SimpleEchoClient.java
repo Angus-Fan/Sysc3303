@@ -153,6 +153,11 @@ public class SimpleEchoClient{
 
 
       File file = new File(path + fileName);
+      if(!file.canRead())
+      {
+        System.out.println("Cannot read the file from: "+(path+fileName));
+        System.exit(0);
+      }
       int size = (int) file.length();
       if(!mode) {
         System.out.println("File size: " + size);
