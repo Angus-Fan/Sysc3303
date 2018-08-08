@@ -345,7 +345,7 @@ public class SimpleEchoClient{
     try
     {
       FileOutputStream out = new FileOutputStream(path+fileName);
-      out.write((byte)1);
+      out.write((byte)0);
 
       out.close();
     }
